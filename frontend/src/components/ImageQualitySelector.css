@@ -1,0 +1,17 @@
+.image-quality-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.image-quality-info {
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.image-quality-info strong {
+  color: var(--accent-cyan);
+}

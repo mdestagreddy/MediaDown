@@ -1,0 +1,484 @@
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
+const QRCode = require('qrcode');
+const crypto = require('crypto');
+const rateLimit = require('express-rate-limit');
+
+const { getMediaInfo, downloadMedia } = require('./services/ytDlpService');
+const { getImageInfo, downloadImages } = require('./services/galleryDlService');
+const taskManager = require('./services/taskManager');
+const { getLocalIp } = require('./utils/network');
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+const MAX_CONCURRENT = parseInt(process.env.MAX_CONCURRENT) || 4;
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: MAX_CONCURRENT >= 8 ? 180 : 90,
+  message: { error: 'Terlalu banyak permintaan (rate limit). Coba lagi dalam 1 menit.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.originalUrl === '/api/health'
+});
+
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.use('/api/', apiLimiter);
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    app: 'MediaDown Backend',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Cloudflare Turnstile verification
+const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET_KEY;
+
+async function verifyTurnstile(token, ip = '') {
+  if (!TURNSTILE_SECRET) {
+    console.warn('[Turnstile] TURNSTILE_SECRET_KEY not set, skipping verification');
+    return { success: true, skip: true };
+  }
+  if (!token) return { success: false, error: 'Captcha token missing.' };
+
+  const url = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+  const params = new URLSearchParams();
+  params.append('secret', TURNSTILE_SECRET);
+  params.append('response', token);
+  if (ip) params.append('remoteip', ip);
+
+  try {
+    const resp = await fetch(url, { method: 'POST', body: params });
+    const data = await resp.json();
+    if (data.success) return { success: true, skip: false };
+    const err = data['error-codes']?.[0] || 'Captcha verification failed.';
+    return { success: false, error: err };
+  } catch (e) {
+    return { success: false, error: 'Captcha service unavailable.' };
+  }
+}
+
+
+// Network information for cross-device access (Mobile, Laptop, Tablet on same Wi-Fi)
+app.get('/api/network-info', (req, res) => {
+  const localIp = getLocalIp();
+  res.json({
+    localIp,
+    port: PORT,
+    baseUrl: `http://${localIp}:${PORT}`
+  });
+});
+
+// Check and manage YouTube cookies for bypassing bot checks
+const cookiesFile = path.resolve(__dirname, '../cookies.txt');
+
+app.get('/api/cookies', (req, res) => {
+  const exists = fs.existsSync(cookiesFile);
+  res.json({
+    exists,
+    size: exists ? fs.statSync(cookiesFile).size : 0
+  });
+});
+
+app.post('/api/cookies', (req, res) => {
+  const { content } = req.body;
+  if (!content || !content.trim()) {
+    return res.status(400).json({ error: 'Konten cookies tidak boleh kosong.' });
+  }
+  try {
+    fs.writeFileSync(cookiesFile, content.trim(), 'utf8');
+    res.json({ success: true, message: 'Cookies YouTube berhasil disimpan!' });
+  } catch (err) {
+    res.status(500).json({ error: 'Gagal menyimpan file cookies: ' + err.message });
+  }
+});
+
+app.delete('/api/cookies', (req, res) => {
+  try {
+    if (fs.existsSync(cookiesFile)) {
+      fs.unlinkSync(cookiesFile);
+    }
+    res.json({ success: true, message: 'File cookies berhasil dihapus.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Gagal menghapus file cookies: ' + err.message });
+  }
+});
+
+// Extract media information (Video & Audio streams)
+app.post('/api/info', async (req, res) => {
+  const { url, includePlaylist = false, turnstileToken } = req.body;
+  if (!url || typeof url !== 'string' || !url.trim()) {
+    return res.status(400).json({ error: 'URL media harus disertakan.' });
+  }
+
+  const turnstile = await verifyTurnstile(turnstileToken, req.ip);
+  if (!turnstile.success) {
+    return res.status(403).json({ error: turnstile.error });
+  }
+
+  try {
+    const info = await getMediaInfo(url.trim(), { includePlaylist });
+    res.json({ success: true, data: info });
+  } catch (err) {
+    // Check if yt-dlp indicates this is a playlist and retry with playlist mode
+    if (!includePlaylist && (err.message.includes('playlist') || err.message.includes('is a private video'))) {
+      try {
+        const info = await getMediaInfo(url.trim(), { includePlaylist: true });
+        res.json({ success: true, data: info });
+      } catch (retryErr) {
+        console.error('[Info Error]', retryErr.message);
+        res.json({
+          success: false,
+          data: { isPlaylist: false, title: 'Media tidak dapat dianalisis oleh yt-dlp' },
+          error: retryErr.message || 'Gagal mengekstrak informasi dari media ini.'
+        });
+      }
+    } else {
+      console.error('[Info Error]', err.message);
+      res.json({
+        success: false,
+        data: { isPlaylist: false, title: 'Media tidak dapat dianalisis oleh yt-dlp' },
+        error: err.message || 'Gagal mengekstrak informasi dari media ini.'
+      });
+    }
+  }
+});
+
+// Get available images for download mode (uses gallery-dl)
+app.post('/api/image-info', async (req, res) => {
+  const { url, turnstileToken } = req.body;
+  if (!url || typeof url !== 'string' || !url.trim()) {
+    return res.status(400).json({ error: 'URL media harus disertikan.' });
+  }
+
+  const turnstile = await verifyTurnstile(turnstileToken, req.ip);
+  if (!turnstile.success) {
+    return res.status(403).json({ error: turnstile.error });
+  }
+
+  try {
+    const info = await getImageInfo(url.trim());
+    res.json({ success: true, data: info });
+  } catch (err) {
+    console.error('[Image Info Error]', err.message);
+    res.json({
+      success: false,
+      data: { images: [], qualities: [], count: 0 },
+      error: err.message || 'Gagal mendapatkan informasi gambar.'
+    });
+  }
+});
+
+// Start media download & processing task
+app.post('/api/download', async (req, res) => {
+  const {
+    url,
+    mode = 'video', // 'video' | 'audio' | 'image' | 'playlist'
+    videoFormatId,
+    audioFormatId,
+    videoContainer = 'mp4',
+    audioFormat = 'mp3',
+    audioQuality = '320k',
+    sampleRate = 'auto',
+    bitDepth = 'auto',
+    title = 'media',
+    imageQuality = 'best',
+    imageFormat = 'original',
+    playlistItems = [],
+    playlistMode = 'all',
+    mediaEngine = 'auto', // 'auto' | 'ytdl' | 'gallery'
+    turnstileToken
+  } = req.body;
+
+  if (!url || !url.trim()) {
+    return res.status(400).json({ error: 'URL tidak boleh kosong.' });
+  }
+
+  const turnstile = await verifyTurnstile(turnstileToken, req.ip);
+  if (!turnstile.success) {
+    return res.status(403).json({ error: turnstile.error });
+  }
+
+  const taskId = crypto.randomUUID();
+  const task = taskManager.createTask(taskId, {
+    url: url.trim(),
+    mode,
+    title,
+    videoFormatId,
+    audioFormatId,
+    videoContainer,
+    audioFormat,
+    audioQuality,
+    sampleRate,
+    bitDepth,
+    imageQuality,
+    imageFormat,
+    playlistItems,
+    playlistMode,
+    mediaEngine
+  });
+
+  res.json({
+    success: true,
+    taskId,
+    message: 'Tugas pengunduhan berhasil dibuat.',
+    queuePosition: taskManager.activeCount >= taskManager.maxConcurrent ? taskManager.queue.length + 1 : null,
+    maxConcurrent: taskManager.maxConcurrent
+  });
+
+  // Route to appropriate download service based on mode and mediaEngine
+  const useGalleryDl = mediaEngine === 'gallery' || (mediaEngine === 'auto' && mode === 'image');
+  const useYtDlp = mediaEngine === 'ytdl' || mediaEngine === 'auto' && mode !== 'image';
+
+  const progressCallback = (prog) => {
+    const queueLen = taskManager.queue.length;
+    taskManager.updateTask(taskId, {
+      progress: prog.percent,
+      speed: prog.speed,
+      eta: prog.eta,
+      status: prog.status,
+      message: prog.message || (queueLen > 0 ? `Sedang mengunduh... ${queueLen} dalam antrean (${prog.percent.toFixed(1)}%)` : `Sedang mengunduh... (${prog.percent.toFixed(1)}%)`)
+    });
+  };
+
+  const downloadFn = () => {
+    if (useGalleryDl) {
+      return downloadImages({
+        url: url.trim(),
+        outputDir: task.taskDir,
+        imageFormat,
+        imageQuality: typeof imageQuality === 'string' && !isNaN(imageQuality) ? parseInt(imageQuality) : imageQuality,
+        onProgress: progressCallback,
+        onLog: (msg) => console.log(`[Task ${taskId}] ${msg}`)
+      });
+    }
+    return downloadMedia({
+      url: url.trim(),
+      outputDir: task.taskDir,
+      mode,
+      videoFormatId,
+      audioFormatId,
+      videoContainer,
+      audioFormat,
+      audioQuality,
+      sampleRate,
+      bitDepth,
+      imageQuality: typeof imageQuality === 'string' && !isNaN(imageQuality) ? parseInt(imageQuality) : imageQuality,
+      imageFormat,
+      playlistItems: playlistItems,
+      playlistMode: playlistMode,
+      onProgress: progressCallback,
+      onLog: (msg) => console.log(`[Task ${taskId}] ${msg}`)
+    });
+  };
+
+  // Enqueue the download - will start when a worker slot is available
+  taskManager.enqueueTask(taskId, downloadFn);
+});
+
+// Task status endpoint (polling fallback)
+app.get('/api/tasks/:taskId', (req, res) => {
+  const { taskId } = req.params;
+  const task = taskManager.getTask(taskId);
+  if (!task) {
+    return res.status(404).json({ error: 'Tugas tidak ditemukan atau telah kedaluwarsa.' });
+  }
+  res.json({ success: true, task: taskManager.serializeTask(task) });
+});
+
+// Server-Sent Events (SSE) for real-time progress updates
+app.get('/api/tasks/:taskId/events', (req, res) => {
+  const { taskId } = req.params;
+  const task = taskManager.getTask(taskId);
+
+  if (!task) {
+    return res.status(404).json({ error: 'Tugas tidak ditemukan.' });
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  taskManager.subscribe(taskId, res);
+});
+
+// Queue status endpoint
+app.get('/api/queue', (req, res) => {
+  res.json({
+    success: true,
+    ...taskManager.getQueueStatus()
+  });
+});
+
+// Download endpoint for transferring file to client/another device
+// Automatically deletes file from server once client finishes downloading!
+app.get('/api/download/file/:taskId', (req, res) => {
+  const { taskId } = req.params;
+  const task = taskManager.getTask(taskId);
+
+  if (!task) {
+    return res.status(404).send('File tidak ditemukan atau telah kedaluwarsa.');
+  }
+
+  if (task.isCleaned || !task.filePath || !fs.existsSync(task.filePath)) {
+    return res.status(410).send('File ini sudah selesai diunduh dan telah otomatis dibersihkan dari server sesuai kebijakan privasi.');
+  }
+
+  const fileName = task.fileName || 'download';
+
+  // Set response headers
+  res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
+  res.setHeader('Content-Type', 'application/octet-stream');
+
+  const fileStream = fs.createReadStream(task.filePath);
+
+  fileStream.on('error', (streamErr) => {
+    console.error('[Stream Error]', streamErr.message);
+    if (!res.headersSent) {
+      res.status(500).send('Terjadi kesalahan saat membaca file di server.');
+    }
+  });
+
+  // When client successfully finishes downloading the entire file:
+  res.on('finish', () => {
+    console.log(`[Transfer Complete] Klien selesai mengunduh task ${taskId}. Memulai penghapusan otomatis...`);
+    taskManager.markDownloaded(taskId);
+  });
+
+  fileStream.pipe(res);
+});
+
+// Download specific file from a playlist task
+app.get('/api/download/file/:taskId/:filename', (req, res) => {
+  const { taskId, filename } = req.params;
+  const task = taskManager.getTask(taskId);
+
+  if (!task) {
+    return res.status(404).send('File tidak ditemukan atau telah kedaluwarsa.');
+  }
+
+  if (task.isCleaned || !task.filePath) {
+    return res.status(410).send('File ini sudah selesai diunduh dan telah otomatis dibersihkan dari server.');
+  }
+
+  // Find the specific file in playlist
+  let filePath;
+  if (task.mode === 'playlist' && task.playlistFiles) {
+    const fileEntry = task.playlistFiles.find(f => f.name === decodeURIComponent(filename) || f.name === filename);
+    if (!fileEntry) {
+      return res.status(404).send('File tidak ditemukan dalam paket playlist.');
+    }
+    filePath = fileEntry.path;
+  } else {
+    // Single file mode
+    filePath = task.filePath;
+  }
+
+  if (!filePath || !fs.existsSync(filePath)) {
+    return res.status(410).send('File ini sudah selesai diunduh dan telah otomatis dibersihkan dari server.');
+  }
+
+  const fileName = path.basename(filePath);
+  res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+  res.setHeader('Content-Type', 'application/octet-stream');
+
+  const fileStream = fs.createReadStream(filePath);
+
+  fileStream.on('error', (streamErr) => {
+    console.error('[Stream Error]', streamErr.message);
+    if (!res.headersSent) {
+      res.status(500).send('Terjadi kesalahan saat membaca file di server.');
+    }
+  });
+
+  // For playlist items, don't clean the whole task yet - only clean on the main file download
+  if (task.mode !== 'playlist') {
+    res.on('finish', () => {
+      console.log(`[Transfer Complete] Klien selesai mengunduh task ${taskId}. Memulai penghapusan otomatis...`);
+      taskManager.markDownloaded(taskId);
+    });
+  }
+
+  fileStream.pipe(res);
+});
+
+// Generate QR Code for downloading from mobile device on the same local network
+app.get('/api/qrcode/:taskId', async (req, res) => {
+  const { taskId } = req.params;
+  const task = taskManager.getTask(taskId);
+
+  if (!task) {
+    return res.status(404).json({ error: 'Tugas tidak ditemukan.' });
+  }
+
+  const localIp = getLocalIp();
+  const directDownloadUrl = `http://${localIp}:${PORT}/api/download/file/${taskId}`;
+
+  try {
+    const qrDataUrl = await QRCode.toDataURL(directDownloadUrl, {
+      width: 320,
+      margin: 2,
+      color: {
+        dark: '#0f172a',
+        light: '#ffffff'
+      }
+    });
+
+    res.json({
+      success: true,
+      qrDataUrl,
+      downloadUrl: directDownloadUrl
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Gagal membuat QR Code.' });
+  }
+});
+
+// Manual cleanup / cancel task endpoint
+app.delete('/api/tasks/:taskId', (req, res) => {
+  const { taskId } = req.params;
+  const task = taskManager.getTask(taskId);
+
+  if (!task) {
+    return res.status(404).json({ error: 'Tugas tidak ditemukan.' });
+  }
+
+  taskManager.cleanTaskFile(taskId);
+  res.json({ success: true, message: 'File dan tugas berhasil dibersihkan dari server.' });
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  const localIp = getLocalIp();
+  console.log(`====================================================`);
+  console.log(`🚀 MediaDown Backend Server berjalan pada:`);
+  console.log(`👉 Local:   http://localhost:${PORT}`);
+  console.log(`👉 Network: http://${localIp}:${PORT}`);
+  console.log(`====================================================`);
+});
+
+// Graceful error handling - prevent crashes from API loops / async errors
+process.on('unhandledRejection', (reason) => {
+  console.error('[Unhandled Rejection]', reason?.message || reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[Uncaught Exception]', err.message, err.stack);
+  process.exit(1);
+});
+
+process.on('SIGINT', () => process.exit(0));
+

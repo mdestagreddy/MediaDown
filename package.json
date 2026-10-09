@@ -1,0 +1,17 @@
+{
+  "name": "mediadown",
+  "version": "1.0.0",
+  "description": "Aplikasi pengunduh media sosial performa tinggi berbasis **yt-dlp** & **FFmpeg** dengan antarmuka web modern responsif (React).",
+  "main": "index.js",
+  "scripts": {
+    "server_dev": "npm run dev --prefix backend",
+    "client_dev": "npm run dev --prefix frontend",
+    "server": "npm run start --prefix backend",
+    "dev": "concurrently \"npm run server_dev\" \"npm run client_dev\""
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "dependencies": {
+    "concurrently": "^10.0.6"
+  }
+}
