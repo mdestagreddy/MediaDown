@@ -37,6 +37,52 @@ Dirancang khusus untuk melampaui website downloader pihak ketiga yang sering rus
    - Desain gelap berkelas (*Cyber-Dark Glassmorphic*), animasi transisi mulus, indikator progress real-time (persen, kecepatan unduh, estimasi sisa waktu via Server-Sent Events).
    - Nyaman digunakan baik di layar HP, tablet, maupun desktop PC.
 
+7. **Queue-Based Download Processing**:
+   - Unduhan diproses secara berurut dengan kontrol concurrency (`MAX_CONCURRENT`, default 4) agar server tidak kelebihan beban.
+   - Pantau antrean via `GET /api/queue`.
+
+8. **Auto-Wipe sampai bersih (Orphan Cleanup)**:
+   - On startup & tiap 2 menit, semua folder/task yang tidak terlacak (`backend/downloads/`, termasuk sisa crash) dan file `.part/.tmp` otomatis dihapus.
+
+9. **Anti-Bot (Cloudflare Turnstile) — production only**:
+   - Proteksi captcha pada `POST /api/info`, `/api/image-info`, `/api/download`.
+   - Aktif **hanya di production** (`import.meta.env.PROD`) ketika `VITE_TURNSTILE_SITE_KEY` diset. Di dev, captcha otomatis tidak muncul.
+   - Jika `TURNSTILE_SECRET_KEY` belum di-set di backend, semua request lolos (graceful degradation).
+
+10. **Rate Limiting**:
+    - `express-rate-limit` mencegah looping/flood API: 90 req/menit/IP → `429 Too Many Requests` pada semua route `/api/`.
+
+11. **Server resilience**:
+    - Handler `uncaughtException` / `unhandledRejection` mencegah server crash mendadak dan mencatat error ke log.
+
+---
+
+## 🔒 Keamanan
+
+### Cloudflare Turnstile (anti-bot)
+- **Get keys**: [Cloudflare Dashboard → Turnstile](https://dash.cloudflare.com/)
+- **Backend** (`backend/.env`):
+  ```
+  TURNSTILE_SECRET_KEY=your_secret_key
+  ```
+- **Frontend** (build-time, `frontend/.env`):
+  ```
+  VITE_TURNSTILE_SITE_KEY=your_site_key
+  ```
+- Aktif otomatis di **production build** saja. Di `npm run dev`, captcha tidak muncul.
+
+### Rate limiting
+| Aturan | Nilai |
+|---|---|
+| Window | 60 detik |
+| Limit / IP | 90 request |
+| Endpoint | Semua `/api/*` |
+| Response over-limit | `429` + header `Retry-After` |
+
+### Queue & concurrency
+- `MAX_CONCURRENT` (env, default `4`) — jumlah unduhan simultan maksimal.
+- Task berikutnya otomatis jalan ketika slot ada. Cek antrean via `GET /api/queue`.
+
 ---
 
 ## 🛠️ Panduan Menjalankan Aplikasi
@@ -69,6 +115,49 @@ Buka browser:
 
 ---
 
+## 🐳 Deployment (Docker)
+
+Proyek sudah dilengkapi konfigurasi Docker siap pakai untuk produksi.
+
+### 0. Persiapan
+Salin `.env.example` → `.env`, lalu isi key Turnstile & engine path:
+```bash
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+```
+
+Edit `backend/.env`:
+```
+PORT=5000
+TURNSTILE_SECRET_KEY=your_cloudflare_secret        # optional, kosongkan = nonaktif
+YTDLP_COOKIE_FILE=/app/cookies/cookies.txt         # optional
+```
+
+Edit `frontend/.env` (build-time):
+```
+VITE_TURNSTILE_SITE_KEY=your_cloudflare_sitekey   # optional, kosongkan = nonaktif di prod
+```
+
+### 1. Build & jalankan
+```bash
+docker-compose up -d --build
+```
+
+| Service | Port | Keterangan |
+|---|---|---|
+| `backend` | 5000 | Express API + yt-dlp/gallery-dl/ffmpeg |
+| `frontend` | 5173 → 80 | React build via nginx |
+| `nginx` | 80/443 | Reverse proxy (API → backend, / → frontend) |
+
+### 2. Akses
+- Lokal: `http://localhost`
+- LAN: `http://<IP-LAN-ANDA>`
+
+### 3. Environment variables
+Lihat `backend/.env.example` & `frontend/.env.example` untuk daftar lengkap termasuk `MAX_CONCURRENT`, engine paths, dan Turnstile.
+
+---
+
 ## 📂 Struktur Direktori
 
 ```
@@ -81,6 +170,9 @@ MediaDown/
 │   │   │   └── taskManager.js     # Manajemen task, SSE, & auto-cleanup server
 │   │   └── utils/
 │   │       └── network.js         # Deteksi otomatis IP LAN untuk QR transfer
+│   ├── .env.example               # Env template (TURNSTILE_SECRET_KEY, engine paths)
+│   ├── Dockerfile                 # Production image (Node + yt-dlp + ffmpeg + gallery-dl)
+│   ├── .dockerignore
 │   └── package.json
 ├── frontend/
 │   ├── src/
@@ -105,8 +197,15 @@ MediaDown/
 │   │       ├── FailedBanner.jsx       # Banner kegagalan
 │   │       ├── QrModal.jsx            # Modal QR transfer cross-device
 │   │       └── CookieModal.jsx        # Modal pengaturan cookies anti-bot
+│   ├── .env.example                   # Env template (VITE_TURNSTILE_SITE_KEY, dll)
+│   ├── Dockerfile                     # Builder (vite) + nginx runtime
+│   ├── .dockerignore
 │   ├── vite.config.js             # Konfigurasi proxy API & host 0.0.0.0
 │   └── package.json
+├── docker-compose.yml           # Orchestration: backend + frontend + nginx
+├── nginx/
+│   ├── conf.d/default.conf    # Reverse proxy (API → 5000, / → frontend)
+│   └── letsencrypt/           # TLS cert mount
 └── README.md
 ```
 
