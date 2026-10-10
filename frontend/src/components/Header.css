@@ -24,15 +24,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+  color: var(--text-main);
+  box-shadow: 0 4px 15px var(--brand-icon-shadow);
 }
 
 .brand-title {
   font-size: 24px;
   font-weight: 800;
   letter-spacing: -0.5px;
-  background: linear-gradient(to right, #fff, #94a3b8);
+  background: linear-gradient(to right, var(--brand-title-gradient-1), var(--brand-title-gradient-2));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -50,8 +50,8 @@
   align-items: center;
   gap: 8px;
   padding: 6px 14px;
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  background: var(--server-badge-bg);
+  border: 1px solid var(--server-badge-border);
   border-radius: 9999px;
   font-size: 13px;
   font-weight: 600;
@@ -71,4 +71,19 @@
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.theme-toggle {
+  padding: 6px 12px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-color: var(--border-subtle);
+  color: var(--text-muted);
+}
+
+.theme-toggle:hover {
+  border-color: var(--theme-toggle-border-hover);
+  color: var(--accent-cyan);
 }

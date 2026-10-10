@@ -1,55 +1,59 @@
 import { Smartphone, RefreshCw, ShieldCheck, X } from 'lucide-react';
 import './shared.css';
+import useLocale from '../hooks/useLocale';
 
-const QrModal = ({ qrData, networkInfo, onClose }) => (
-  <div className="modal-overlay" onClick={onClose}>
-    <div className="qr-modal" onClick={(e) => e.stopPropagation()}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, color: '#fff' }}>
-          <Smartphone size={18} style={{ color: 'var(--accent-cyan)' }} />
-          <span>Unduh ke Ponsel / Perangkat Lain</span>
+const QrModal = ({ qrData, networkInfo, onClose, visible }) => {
+  const { t } = useLocale();
+
+  return (
+    <div className={`modal-overlay ${visible ? 'modal-visible' : ''}`} onClick={onClose}>
+      <div className="qr-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="fl-between w-100" onClick={(e) => e.stopPropagation()}>
+          <div className="fl-row gap-8 fw-700 c-main">
+            <Smartphone size={18} className="c-cyan" />
+            <span>{t('qrModal.downloadToDevice')}</span>
+          </div>
+          <button
+            type="button"
+            className="btn-secondary btn-sm"
+            onClick={onClose}
+          >
+            <X size={16} />
+          </button>
         </div>
-        <button
-          type="button"
-          className="btn-secondary"
-          style={{ padding: '4px 8px' }}
-          onClick={onClose}
-        >
-          <X size={16} />
-        </button>
-      </div>
 
-      <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-        Pastikan ponsel atau perangkat Anda terhubung ke jaringan Wi-Fi yang sama (<strong>{networkInfo?.localIp}</strong>), lalu scan QR Code berikut:
-      </p>
+        <p className="t-base c-muted">
+          {t('qrModal.wifiPrompt')} (<strong>{networkInfo?.localIp}</strong>), {t('qrModal.scanQr')}
+        </p>
 
-      <div className="qr-image-wrap">
-        {qrData?.qrDataUrl ? (
-          <img src={qrData.qrDataUrl} alt="Scan to Download" className="qr-image" />
-        ) : (
-          <div style={{ width: '220px', height: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <RefreshCw size={24} className="spin-fast" />
+        <div className="qr-image-wrap">
+          {qrData?.qrDataUrl ? (
+            <img src={qrData.qrDataUrl} alt="Scan to Download" className="qr-image" />
+          ) : (
+            <div className="qr-placeholder">
+              <RefreshCw size={24} className="spin-fast" />
+            </div>
+          )}
+        </div>
+
+        {qrData?.downloadUrl && (
+          <div className="w-100">
+            <div className="t-xs c-dim mb-4">
+              {t('qrModal.directLink')}
+            </div>
+            <div className="qr-link-box">
+              {qrData.downloadUrl}
+            </div>
           </div>
         )}
-      </div>
 
-      {qrData?.downloadUrl && (
-        <div style={{ width: '100%' }}>
-          <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginBottom: '4px', textAlign: 'left' }}>
-            Tautan Unduh Langsung:
-          </div>
-          <div className="qr-link-box">
-            {qrData.downloadUrl}
-          </div>
+        <div className="auto-clean-notice t-xs w-100">
+          <ShieldCheck size={16} />
+          <span>{t('qrModal.autoDelete')}</span>
         </div>
-      )}
-
-      <div className="auto-clean-notice" style={{ fontSize: '11px', width: '100%' }}>
-        <ShieldCheck size={16} />
-        <span>Saat ponsel Anda selesai mengunduh, file di server akan otomatis langsung terhapus.</span>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default QrModal;

@@ -1,12 +1,12 @@
 .ready-box {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(17, 24, 39, 0.85));
-  border: 1px solid rgba(16, 185, 129, 0.35);
+  background: var(--ready-box-bg);
+  border: 1px solid var(--ready-box-border);
   border-radius: var(--radius-xl);
   padding: 26px;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  box-shadow: var(--shadow-card), 0 0 30px rgba(16, 185, 129, 0.15);
+  box-shadow: var(--shadow-card), var(--shadow-emerald-glow);
 }
 
 .ready-header {
@@ -19,8 +19,8 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: rgba(16, 185, 129, 0.2);
-  border: 1px solid rgba(16, 185, 129, 0.4);
+  background: var(--ready-icon-bg);
+  border: 1px solid var(--ready-icon-border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -34,7 +34,7 @@
 .ready-title {
   font-size: 20px;
   font-weight: 800;
-  color: #fff;
+  color: var(--text-main);
 }
 
 .ready-file-info {
@@ -58,18 +58,18 @@
   justify-content: center;
   gap: 10px;
   padding: 14px 22px;
-  background: linear-gradient(135deg, var(--accent-emerald), #059669);
+  background: linear-gradient(135deg, var(--accent-emerald), color-mix(in srgb, var(--accent-emerald) 65%, var(--color-black)));
   border-radius: var(--radius-md);
-  color: #fff;
+  color: var(--text-on-cta);
   font-size: 15px;
   font-weight: 800;
-  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 4px 18px var(--btn-download-shadow);
 }
 
 .btn-client-download:hover {
   opacity: 0.95;
   transform: translateY(-2px);
-  box-shadow: 0 6px 22px rgba(16, 185, 129, 0.55);
+  box-shadow: 0 6px 22px var(--btn-download-shadow-hover);
 }
 
 .btn-qr-download {
@@ -80,15 +80,51 @@
   justify-content: center;
   gap: 10px;
   padding: 14px 22px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--btn-qr-bg);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  color: #fff;
+  color: var(--text-main);
   font-size: 15px;
   font-weight: 700;
 }
 
 .btn-qr-download:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--btn-qr-bg-hover);
   transform: translateY(-1px);
+}
+
+.cleaned-box {
+  border-color: var(--border-active);
+  background: var(--bg-card-hover);
+}
+
+.cleaned-icon {
+  background: color-mix(in srgb, var(--accent-indigo) 25%, transparent);
+  color: var(--accent-indigo);
+  border-color: var(--border-active);
+}
+
+.ready-file-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  justify-content: flex-start;
+  gap: 8px;
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  color: var(--text-main);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ready-file-btn:hover {
+  background: var(--bg-card-hover);
+}
+
+.text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

@@ -1,5 +1,6 @@
 import { Download, RefreshCw } from 'lucide-react';
 import './DownloadActionCard.css';
+import useLocale from '../hooks/useLocale';
 
 const DownloadActionCard = ({
   mode,
@@ -7,38 +8,52 @@ const DownloadActionCard = ({
   audioTargetFormat,
   isStartingDownload,
   onStartDownload
-}) => (
-  <div className="action-card">
-    <div className="action-info">
-      <span className="action-info-title">
-        {mode === 'video' ? `Unduh Video (${videoContainer.toUpperCase()})` : ''}
-        {mode === 'audio' ? `Unduh Audio (${audioTargetFormat.toUpperCase()})` : ''}
-        {mode === 'image' ? 'Unduh Gambar/Thumbnail' : ''}
-      </span>
-      <span className="action-info-sub">
-        {mode === 'image' ? 'Mengunduh gambar/thumbnail dari server dengan kualitas yang dipilih.' : 'Server akan mengunduh stream terpisah & menggabungkannya via FFmpeg secara instan.'}
-      </span>
-    </div>
+}) => {
+  const { t } = useLocale();
 
-    <button
-      type="button"
-      className="btn-download-large"
-      onClick={onStartDownload}
-      disabled={isStartingDownload}
-    >
-      {isStartingDownload ? (
-        <>
-          <RefreshCw size={20} className="spin-fast" />
-          <span>Mempersiapkan...</span>
-        </>
-      ) : (
-        <>
-          <Download size={20} />
-          <span>Unduh Sekarang</span>
-        </>
-      )}
-    </button>
-  </div>
-);
+  const modeLabel = () => {
+    if (mode === 'video') return t('downloadAction.video', { container: videoContainer.toUpperCase() });
+    if (mode === 'audio') return t('downloadAction.audio', { format: audioTargetFormat.toUpperCase() });
+    if (mode === 'image') return t('downloadAction.image');
+    return '';
+  };
+
+  const modeSub = () => {
+    if (mode === 'image') return t('downloadAction.imageSub');
+    return t('downloadAction.videoSub');
+  };
+
+  return (
+    <div className="action-card">
+      <div className="action-info">
+        <span className="action-info-title">
+          {modeLabel()}
+        </span>
+        <span className="action-info-sub">
+          {modeSub()}
+        </span>
+      </div>
+
+      <button
+        type="button"
+        className="btn-download-large"
+        onClick={onStartDownload}
+        disabled={isStartingDownload}
+      >
+        {isStartingDownload ? (
+          <>
+            <RefreshCw size={20} className="spin-fast" />
+            <span>{t('downloadAction.preparing')}</span>
+          </>
+        ) : (
+          <>
+            <Download size={20} />
+            <span>{t('downloadAction.downloadNow')}</span>
+          </>
+        )}
+      </button>
+    </div>
+  );
+};
 
 export default DownloadActionCard;

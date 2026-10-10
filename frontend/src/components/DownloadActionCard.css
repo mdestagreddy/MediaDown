@@ -15,7 +15,7 @@
 .action-info-title {
   font-size: 14px;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-main);
 }
 
 .action-info-sub {
@@ -30,16 +30,16 @@
   padding: 14px 28px;
   background: linear-gradient(135deg, var(--accent-indigo), var(--accent-violet));
   border-radius: var(--radius-lg);
-  color: #fff;
+  color: var(--text-white) !important;
   font-size: 16px;
   font-weight: 800;
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 6px 20px var(--btn-download-large-shadow);
 }
 
 .btn-download-large:hover:not(:disabled) {
   opacity: 0.95;
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.55);
+  box-shadow: 0 8px 25px var(--btn-download-large-shadow-hover);
 }
 
 .btn-download-large:disabled {

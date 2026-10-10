@@ -11,6 +11,7 @@ import {
   Image
 } from 'lucide-react';
 import './UrlInputCard.css';
+import useLocale from '../hooks/useLocale';
 
 const UrlInputCard = ({
   url,
@@ -22,7 +23,10 @@ const UrlInputCard = ({
   onOpenCookieModal,
   mediaEngine,
   onMediaEngineChange
-}) => (
+}) => {
+  const { t } = useLocale();
+
+  return (
   <div className="input-card">
     <form onSubmit={onAnalyze} className="input-wrapper">
       <div className="input-icon">
@@ -31,7 +35,7 @@ const UrlInputCard = ({
       <input
         type="url"
         className="url-input"
-        placeholder="Tempel tautan gambar/video/audio (misal: YouTube, TikTok, IG, Twitter, dll)..."
+        placeholder={t('main.urlPlaceholder')}
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         disabled={isLoadingInfo}
@@ -42,7 +46,7 @@ const UrlInputCard = ({
               type="button"
               className="btn-secondary btn-clear"
               onClick={() => setUrl('')}
-              title="Hapus"
+              title={t('main.clearTooltip')}
             >
             <X size={16} />
           </button>
@@ -51,10 +55,10 @@ const UrlInputCard = ({
           type="button"
           className="btn-secondary"
           onClick={onPaste}
-          title="Tempel dari Clipboard"
+          title={t('main.pasteTooltip')}
         >
           <Clipboard size={16} />
-          <span>Tempel</span>
+          <span>{t('main.pasteBtn')}</span>
         </button>
         <button
           type="submit"
@@ -64,12 +68,12 @@ const UrlInputCard = ({
           {isLoadingInfo ? (
             <>
               <RefreshCw size={16} className="spin-fast" />
-              <span>Memeriksa...</span>
+              <span>{t('main.analyzingBtn')}</span>
             </>
           ) : (
             <>
               <Sliders size={16} />
-              <span>Analisis Media</span>
+              <span>{t('main.analyzeBtn')}</span>
             </>
           )}
         </button>
@@ -80,62 +84,62 @@ const UrlInputCard = ({
     <div className="engine-toggle-wrapper">
       <span className="engine-toggle-label">
         <Cpu size={12} />
-        <span>Engine:</span>
+        <span>{t('main.engineLabel')}</span>
       </span>
       <div className="engine-toggle">
         <button
           type="button"
           className={`engine-btn ${mediaEngine === 'auto' ? 'active' : ''}`}
           onClick={() => onMediaEngineChange('auto')}
-          title="Deteksi otomatis (yt-dlp + gallery-dl)"
+          title={t('main.engineAutoTooltip')}
           disabled={isLoadingInfo}
         >
           <Cpu size={14} />
-          <span>Auto</span>
+          <span>{t('main.engineAuto')}</span>
         </button>
         <button
           type="button"
           className={`engine-btn ${mediaEngine === 'ytdl' ? 'active' : ''}`}
           onClick={() => onMediaEngineChange('ytdl')}
-          title="Paksa gunakan yt-dlp (video/audio)"
+          title={t('main.engineYtdlTooltip')}
           disabled={isLoadingInfo}
         >
           <Video size={14} />
-          <span>yt-dlp</span>
+          <span>{t('main.engineYtdl')}</span>
         </button>
         <button
           type="button"
           className={`engine-btn ${mediaEngine === 'gallery' ? 'active' : ''}`}
           onClick={() => onMediaEngineChange('gallery')}
-          title="Paksa gunakan gallery-dl (gambar)"
+          title={t('main.engineGalleryTooltip')}
           disabled={isLoadingInfo}
         >
           <Image size={14} />
-          <span>gallery-dl</span>
+          <span>{t('main.engineGallery')}</span>
         </button>
       </div>
     </div>
 
     {errorMessage && (
-      <div className="error-banner" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <AlertCircle size={18} style={{ flexShrink: 0 }} />
+      <div className="error-banner fl-between gap-12 flex-wrap">
+        <div className="fl-row gap-10">
+          <AlertCircle size={18} />
           <span>{errorMessage}</span>
         </div>
         {(errorMessage.toLowerCase().includes('bot') || errorMessage.toLowerCase().includes('sign in') || errorMessage.toLowerCase().includes('429')) && (
           <button
             type="button"
-            className="btn-secondary"
-            style={{ padding: '6px 14px', fontSize: '12px', background: 'rgba(255, 255, 255, 0.15)', color: '#fff' }}
+            className="btn-secondary error-btn"
             onClick={onOpenCookieModal}
           >
-            <Key size={13} style={{ marginRight: '6px' }} />
-            <span>Atur Cookies Anti-Bot</span>
+            <Key size={13} className="mr-6" />
+            <span>{t('main.setCookiesBtn')}</span>
           </button>
         )}
       </div>
     )}
   </div>
-);
+  );
+};
 
 export default UrlInputCard;

@@ -1,7 +1,11 @@
 import { Film, Music, Image, ListVideo } from 'lucide-react';
 import './ModeTabs.css';
+import useLocale from '../hooks/useLocale';
 
-const ModeTabs = ({ mode, onChange }) => (
+const ModeTabs = ({ mode, onChange }) => {
+  const { t } = useLocale();
+
+  return (
   <div className="tabs-nav">
     <button
       type="button"
@@ -9,7 +13,7 @@ const ModeTabs = ({ mode, onChange }) => (
       onClick={() => onChange('video')}
     >
       <Film size={18} />
-      <span>Video + Audio</span>
+      <span>{t('modeTabs.video')}</span>
     </button>
     <button
       type="button"
@@ -17,7 +21,7 @@ const ModeTabs = ({ mode, onChange }) => (
       onClick={() => onChange('audio')}
     >
       <Music size={18} />
-      <span>Audio Saja</span>
+      <span>{t('modeTabs.audio')}</span>
     </button>
     <button
       type="button"
@@ -25,7 +29,7 @@ const ModeTabs = ({ mode, onChange }) => (
       onClick={() => onChange('image')}
     >
       <Image size={18} />
-      <span>Gambar/Thumbnail</span>
+      <span>{t('modeTabs.image')}</span>
     </button>
     <button
       type="button"
@@ -33,9 +37,10 @@ const ModeTabs = ({ mode, onChange }) => (
       onClick={() => onChange('playlist')}
     >
       <ListVideo size={18} />
-      <span>Playlist</span>
+      <span>{t('modeTabs.playlist')}</span>
     </button>
   </div>
-);
+  );
+};
 
 export default ModeTabs;

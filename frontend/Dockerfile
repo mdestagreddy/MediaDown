@@ -5,22 +5,23 @@ FROM node:20-slim AS builder
 
 WORKDIR /app
 
-COPY frontend/package*.json ./
-RUN npm ci
-
-COPY frontend/ ./
+# Pass VITE_TURNSTILE_SITE_KEY as build arg (from docker-compose)
+ARG VITE_TURNSTILE_SITE_KEY
+ENV VITE_TURNSTILE_SITE_KEY=$VITE_TURNSTILE_SITE_KEY
 
 ARG NODE_ENV=production
 ENV NODE_ENV=$NODE_ENV
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
 
 RUN npm run build
 
 FROM nginx:alpine AS runtime
 
 COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Copy custom nginx config
-COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 

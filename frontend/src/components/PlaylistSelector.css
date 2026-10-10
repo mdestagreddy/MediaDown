@@ -18,7 +18,7 @@
   gap: 10px;
   font-size: 16px;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-main);
 }
 
 .playlist-count {
@@ -46,7 +46,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--panel-bg);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -55,14 +55,14 @@
 }
 
 .playlist-item:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--panel-bg-hover);
+  border-color: var(--panel-border-hover);
 }
 
 .playlist-item.selected {
-  background: rgba(99, 102, 241, 0.18);
+  background: var(--option-active-bg);
   border-color: var(--border-active);
-  box-shadow: 0 0 16px rgba(99, 102, 241, 0.25);
+  box-shadow: 0 0 16px var(--option-shadow);
 }
 
 .playlist-item-checkbox {
@@ -78,7 +78,7 @@
   height: 30px;
   border-radius: 4px;
   overflow: hidden;
-  background: #000;
+  background: var(--thumbnail-bg);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -99,7 +99,7 @@
 .playlist-item-title {
   font-size: 13px;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-main);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

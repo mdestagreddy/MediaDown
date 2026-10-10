@@ -1,5 +1,6 @@
 import { Film, Volume2, Sliders } from 'lucide-react';
 import './VideoFormatSelector.css';
+import useLocale from '../hooks/useLocale';
 
 const VideoFormatSelector = ({
   mediaInfo,
@@ -9,13 +10,16 @@ const VideoFormatSelector = ({
   onSelectAudioFormat,
   videoContainer,
   onSelectVideoContainer
-}) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+}) => {
+  const { t } = useLocale();
+
+  return (
+  <div className="fl-col gap-20">
     {/* Video Stream Selector */}
     <div className="selector-group">
       <div className="group-label">
         <Film size={15} />
-        <span>1. Pilih Kualitas Resolusi Video (Tersedia dari 4K/1080p hingga 144p)</span>
+        <span>{t('videoFormat.label1')}</span>
       </div>
 
       <div className="options-grid">
@@ -25,12 +29,12 @@ const VideoFormatSelector = ({
           onClick={() => onSelectVideoFormat('bestvideo')}
         >
           <div className="card-top">
-            <span className="quality-badge">Resolusi Tertinggi</span>
+            <span className="quality-badge">{t('videoFormat.bestQuality')}</span>
             <span className="format-ext">AUTO</span>
           </div>
           <div className="card-bottom">
-            <span>Kualitas Maksimum Terbaik</span>
-            <span>Otomatis</span>
+            <span>{t('videoFormat.maxQuality')}</span>
+            <span>{t('videoFormat.auto')}</span>
           </div>
         </div>
 
@@ -46,8 +50,8 @@ const VideoFormatSelector = ({
               <span className="format-ext">{vf.ext ? vf.ext.toUpperCase() : 'MP4'}</span>
             </div>
             <div className="card-bottom">
-              <span>{vf.fps ? `${vf.fps} FPS` : 'Standard'} • {vf.vcodec ? vf.vcodec.split('.')[0] : 'Video'}</span>
-              <span>{vf.formattedSize || 'Dinamis'}</span>
+              <span>{vf.fps ? `${vf.fps} FPS` : t('videoFormat.standard')} • {vf.vcodec ? vf.vcodec.split('.')[0] : 'Video'}</span>
+              <span>{vf.formattedSize || t('videoFormat.dynamic')}</span>
             </div>
           </div>
         ))}
@@ -60,15 +64,15 @@ const VideoFormatSelector = ({
       <div className="selector-group">
         <div className="group-label">
           <Volume2 size={15} />
-          <span>2. Pasangan Kualitas Audio (Bebas Pilih)</span>
+          <span>{t('videoFormat.label2')}</span>
         </div>
         <select
           className="select-control"
           value={selectedAudioFormat}
           onChange={(e) => onSelectAudioFormat(e.target.value)}
         >
-          <option value="best">🎵 Kualitas Audio Terbaik (Disarankan)</option>
-          <option value="none">🔇 Tanpa Suara (Video Mute / Hening)</option>
+          <option value="best">{t('videoFormat.audioBest')}</option>
+          <option value="none">{t('videoFormat.audioNone')}</option>
           {mediaInfo.audioFormats?.map((af) => (
             <option key={af.format_id} value={af.format_id}>
               {af.label}
@@ -81,20 +85,21 @@ const VideoFormatSelector = ({
       <div className="selector-group">
         <div className="group-label">
           <Sliders size={15} />
-          <span>3. Format Kontainer Output Video</span>
+          <span>{t('videoFormat.label3')}</span>
         </div>
         <select
           className="select-control"
           value={videoContainer}
           onChange={(e) => onSelectVideoContainer(e.target.value)}
         >
-          <option value="mp4">MP4 (Paling Populer & Kompatibel Semua Perangkat)</option>
-          <option value="webm">WebM (Ukuran Efisien & Kualitas Tinggi)</option>
-          <option value="mkv">MKV (Mendukung Multi-Audio & Subtitle)</option>
+          <option value="mp4">{t('videoFormat.mp4Desc')}</option>
+          <option value="webm">{t('videoFormat.webmDesc')}</option>
+          <option value="mkv">{t('videoFormat.mkvDesc')}</option>
         </select>
       </div>
     </div>
   </div>
-);
+  );
+};
 
 export default VideoFormatSelector;

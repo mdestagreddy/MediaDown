@@ -21,6 +21,7 @@
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
   --text-dim: #64748b;
+  --text-white: #ffffff;
 
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', Consolas, monospace;
@@ -32,6 +33,174 @@
 
   --shadow-glow: 0 0 35px -5px rgba(99, 102, 241, 0.25);
   --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+
+  --scrollbar-thumb: rgba(255, 255, 255, 0.25);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.4);
+
+  --notice-amber-bg: rgba(245, 158, 11, 0.1);
+  --notice-amber-border: rgba(245, 158, 11, 0.25);
+  --notice-amber-text: rgba(245, 158, 11);;
+  --notice-cyan-bg: rgba(6, 182, 212, 0.1);
+  --notice-cyan-border: rgba(6, 182, 212, 0.25);
+  --notice-indigo-bg: rgba(99, 102, 241, 0.1);
+  --notice-indigo-border: rgba(99, 102, 241, 0.25);
+
+  --ready-box-bg: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(17, 24, 39, 0.85));
+
+  --ready-icon-bg: rgba(16, 185, 129, 0.16);
+  --ready-icon-border: rgba(16, 185, 129, 0.35);
+  --ready-box-border: rgba(16, 185, 129, 0.35);
+  --shadow-emerald-glow: 0 0 30px rgba(16, 185, 129, 0.15);
+
+  --btn-qr-bg: rgba(255, 255, 255, 0.08);
+  --btn-qr-bg-hover: rgba(255, 255, 255, 0.14);
+
+  --progress-bar-bg: rgba(255, 255, 255, 0.08);
+
+  --text-on-cta: #ffffff;
+
+  --error-color-text: #fecdd3;
+  --error-bg: rgba(244, 63, 94, 0.1);
+  --error-border: rgba(244, 63, 94, 0.3);
+  --error-btn-bg: rgba(255, 255, 255, 0.1);
+  --error-btn-bg-hover: rgba(255, 255, 255, 0.18);
+
+  /* ===== New variables (dark theme) ===== */
+  --brand-icon-shadow: rgba(99, 102, 241, 0.4);
+  --server-badge-bg: rgba(16, 185, 129, 0.1);
+  --server-badge-border: rgba(16, 185, 129, 0.25);
+  --hero-gradient-1: #38bdf8;
+  --hero-gradient-2: #818cf8;
+  --hero-gradient-3: #c084fc;
+  --brand-title-gradient-1: #ffffff;
+  --brand-title-gradient-2: #94a3b8;
+  --platform-pill-bg: rgba(255, 255, 255, 0.04);
+  --platform-pill-bg-hover: rgba(255, 255, 255, 0.08);
+  --platform-pill-border-hover: rgba(255, 255, 255, 0.2);
+  --input-focus-shadow: rgba(99, 102, 241, 0.25);
+  --btn-secondary-bg: rgba(255, 255, 255, 0.06);
+  --btn-secondary-bg-hover: rgba(255, 255, 255, 0.12);
+  --btn-primary-shadow: rgba(99, 102, 241, 0.35);
+  --btn-primary-shadow-hover: rgba(99, 102, 241, 0.5);
+  --btn-download-shadow: rgba(16, 185, 129, 0.4);
+  --btn-download-shadow-hover: rgba(16, 185, 129, 0.55);
+  --btn-download-large-shadow: rgba(99, 102, 241, 0.4);
+  --btn-download-large-shadow-hover: rgba(99, 102, 241, 0.55);
+  --thumbnail-bg: #000000;
+  --duration-tag-bg: rgba(0, 0, 0, 0.8);
+  --platform-badge-bg: rgba(15, 23, 42, 0.85);
+  --platform-badge-border: rgba(6, 182, 212, 0.3);
+  --panel-bg: rgba(255, 255, 255, 0.03);
+  --panel-bg-hover: rgba(255, 255, 255, 0.06);
+  --panel-border-hover: rgba(255, 255, 255, 0.2);
+  --panel-subtle-bg: rgba(255, 255, 255, 0.05);
+  --tab-active-bg: rgba(99, 102, 241, 0.15);
+  --option-active-bg: rgba(99, 102, 241, 0.18);
+  --option-shadow: rgba(99, 102, 241, 0.25);
+  --progress-shadow: rgba(99, 102, 241, 0.2);
+  --modal-overlay-bg: rgba(0, 0, 0, 0.8);
+  --qr-modal-shadow: rgba(99, 102, 241, 0.3);
+  --qr-image-wrap-bg: #ffffff;
+  --qr-image-wrap-shadow: rgba(0, 0, 0, 0.5);
+  --accent-emerald-700: #059669;
+  --color-black: #000000;
+  --theme-toggle-border-hover: rgba(99, 102, 241, 0.4);
+  --bg-gradient-1: rgba(99, 102, 241, 0.12);
+  --bg-gradient-2: rgba(6, 182, 212, 0.1);
+  --bg-gradient-3: rgba(139, 92, 246, 0.08);
+}
+
+/* Light theme (applied when <html data-theme="light">) */
+:root[data-theme="light"] {
+  --bg-primary: #f0f2f5;
+  --bg-secondary: #e4e7eb;
+  --bg-card: rgba(255, 255, 255, 0.88);
+  --bg-card-hover: rgba(248, 250, 252, 0.92);
+  --bg-input: rgba(248, 250, 252, 0.9);
+
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-accent: rgba(99, 102, 241, 0.25);
+  --border-active: #6366f1;
+
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --text-dim: #94a3b8;
+
+  --shadow-glow: 0 0 35px -5px rgba(99, 102, 241, 0.18);
+  --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.06), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+
+  --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.35);
+
+  --notice-amber-bg: rgba(245, 158, 11, 0.13);
+  --notice-amber-border: rgba(245, 158, 11, 0.4);
+  --notice-amber-text: rgb(139, 90, 5);
+  --notice-cyan-bg: rgba(6, 182, 212, 0.16);
+  --notice-cyan-border: rgba(6, 182, 212, 0.4);
+  --notice-indigo-bg: rgba(99, 102, 241, 0.16);
+  --notice-indigo-border: rgba(99, 102, 241, 0.4);
+
+  --ready-box-bg: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(248, 250, 252, 0.85));
+
+  --ready-icon-bg: rgba(16, 185, 129, 0.18);
+  --ready-icon-border: rgba(16, 185, 129, 0.45);
+  --ready-box-border: rgba(16, 185, 129, 0.4);
+  --shadow-emerald-glow: 0 0 30px rgba(16, 185, 129, 0.2);
+
+  --btn-qr-bg: rgba(0, 0, 0, 0.05);
+  --btn-qr-bg-hover: rgba(0, 0, 0, 0.1);
+
+  --progress-bar-bg: rgba(0, 0, 0, 0.06);
+
+  --error-color-text: #8f0818;
+  --error-bg: rgba(244, 63, 94, 0.12);
+  --error-border: rgba(244, 63, 94, 0.4);
+  --error-btn-bg: rgba(120, 53, 19, 0.08);
+  --error-btn-bg-hover: rgba(120, 53, 19, 0.14);
+
+  /* ===== New variables (light theme) ===== */
+  --brand-icon-shadow: rgba(99, 102, 241, 0.28);
+  --server-badge-bg: rgba(16, 185, 129, 0.15);
+  --server-badge-border: rgba(16, 185, 129, 0.4);
+  --hero-gradient-1: #0284c7;
+  --hero-gradient-2: #4f46e5;
+  --hero-gradient-3: #7c3aed;
+  --brand-title-gradient-1: #111827;
+  --brand-title-gradient-2: #475569;
+  --platform-pill-bg: rgba(0, 0, 0, 0.04);
+  --platform-pill-bg-hover: rgba(0, 0, 0, 0.08);
+  --platform-pill-border-hover: rgba(0, 0, 0, 0.15);
+  --input-focus-shadow: rgba(99, 102, 241, 0.4);
+  --btn-secondary-bg: rgba(0, 0, 0, 0.06);
+  --btn-secondary-bg-hover: rgba(0, 0, 0, 0.12);
+  --btn-primary-shadow: rgba(99, 102, 241, 0.45);
+  --btn-primary-shadow-hover: rgba(99, 102, 241, 0.7);
+  --btn-download-shadow: rgba(16, 185, 129, 0.45);
+  --btn-download-shadow-hover: rgba(16, 185, 129, 0.65);
+  --btn-download-large-shadow: rgba(99, 102, 241, 0.3);
+  --btn-download-large-shadow-hover: rgba(99, 102, 241, 0.65);
+  --thumbnail-bg: #000000;
+  --duration-tag-bg: rgba(0, 0, 0, 0.75);
+  --platform-badge-bg: rgba(255, 255, 255, 0.75);
+  --platform-badge-border: rgba(6, 182, 212, 0.4);
+  --panel-bg: rgba(0, 0, 0, 0.03);
+  --panel-bg-hover: rgba(0, 0, 0, 0.06);
+  --panel-border-hover: rgba(0, 0, 0, 0.15);
+  --panel-subtle-bg: rgba(0, 0, 0, 0.05);
+  --tab-active-bg: rgba(99, 102, 241, 0.25);
+  --option-active-bg: rgba(99, 102, 241, 0.3);
+  --option-shadow: rgba(99, 102, 241, 0.4);
+  --progress-shadow: rgba(99, 102, 241, 0.3);
+  --modal-overlay-bg: rgba(0, 0, 0, 0.7);
+  --qr-modal-shadow: rgba(99, 102, 241, 0.4);
+  --qr-image-wrap-bg: #ffffff;
+  --qr-image-wrap-shadow: rgba(0, 0, 0, 0.4);
+  --accent-emerald-700: #059669;
+  --color-black: #000000;
+  --theme-toggle-border-hover: rgba(99, 102, 241, 0.3);
+  --bg-gradient-1: rgba(99, 102, 241, 0.08);
+  --bg-gradient-2: rgba(6, 182, 212, 0.06);
+  --bg-gradient-3: rgba(139, 92, 246, 0.06);
 }
 
 * {
@@ -47,12 +216,13 @@ body {
   min-height: 100vh;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(6, 182, 212, 0.1) 0px, transparent 50%),
-    radial-gradient(at 50% 100%, rgba(139, 92, 246, 0.08) 0px, transparent 50%);
+  background-image:
+    radial-gradient(at 0% 0%, var(--bg-gradient-1) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, var(--bg-gradient-2) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, var(--bg-gradient-3) 0px, transparent 50%);
   background-attachment: fixed;
   overflow-x: hidden;
+  transition: background-color 0.3s, color 0.3s;
 }
 
 #root {
@@ -70,11 +240,11 @@ body {
   background: var(--bg-primary);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* Animations */

@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Prevent indexing of API endpoints
+Disallow: /api/
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://mediadown.example/sitemap.xml

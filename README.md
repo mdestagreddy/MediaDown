@@ -34,25 +34,31 @@ Dirancang khusus untuk melampaui website downloader pihak ketiga yang sering rus
    - Dilengkapi pembersih berkala (sweeper) untuk menghapus file yang tidak diunduh setelah 15 menit.
 
 6. **Frontend Modern & Responsif**:
-   - Desain gelap berkelas (*Cyber-Dark Glassmorphic*), animasi transisi mulus, indikator progress real-time (persen, kecepatan unduh, estimasi sisa waktu via Server-Sent Events).
-   - Nyaman digunakan baik di layar HP, tablet, maupun desktop PC.
+    - Desain gelap berkelas (*Cyber-Dark Glassmorphic*), animasi transisi mulus, indikator progress real-time (persen, kecepatan unduh, estimasi sisa waktu via Server-Sent Events).
+    - Nyaman digunakan baik di layar HP, tablet, maupun desktop PC.
+    - **Tema Terang/Gelap otomatis**: mendeteksi preferensi perangkat (`prefers-color-scheme`). Toggle manual via ikon di header (Auto ↔ Terang ↔ Gelap), pilihan tersimpan di *localStorage*.
 
-7. **Queue-Based Download Processing**:
+7. **Multi-Language Support (i18n):**
+   - Bahasa Indonesia & English (auto-detect dari perangkat atau pilih manual).
+   - Semua string teks disimpan dalam file JSON (`src/locales/id.json`, `src/locales/en.json`).
+   - Toggle bahasa tersedia di footer; preferensi disimpan di *localStorage*.
+
+8. **Queue-Based Download Processing**:
    - Unduhan diproses secara berurut dengan kontrol concurrency (`MAX_CONCURRENT`, default 4) agar server tidak kelebihan beban.
    - Pantau antrean via `GET /api/queue`.
 
-8. **Auto-Wipe sampai bersih (Orphan Cleanup)**:
+9. **Auto-Wipe sampai bersih (Orphan Cleanup)**:
    - On startup & tiap 2 menit, semua folder/task yang tidak terlacak (`backend/downloads/`, termasuk sisa crash) dan file `.part/.tmp` otomatis dihapus.
 
-9. **Anti-Bot (Cloudflare Turnstile) — production only**:
+10. **Anti-Bot (Cloudflare Turnstile) — production only**:
    - Proteksi captcha pada `POST /api/info`, `/api/image-info`, `/api/download`.
    - Aktif **hanya di production** (`import.meta.env.PROD`) ketika `VITE_TURNSTILE_SITE_KEY` diset. Di dev, captcha otomatis tidak muncul.
    - Jika `TURNSTILE_SECRET_KEY` belum di-set di backend, semua request lolos (graceful degradation).
 
-10. **Rate Limiting**:
+11. **Rate Limiting**:
     - `express-rate-limit` mencegah looping/flood API: 90 req/menit/IP → `429 Too Many Requests` pada semua route `/api/`.
 
-11. **Server resilience**:
+12. **Server resilience**:
     - Handler `uncaughtException` / `unhandledRejection` mencegah server crash mendadak dan mencatat error ke log.
 
 ---
@@ -176,27 +182,43 @@ MediaDown/
 │   └── package.json
 ├── frontend/
 │   ├── src/
-│   │   ├── App.jsx                # Komponen utama UI MediaDown
+│   │   ├── App.jsx                # Layout shell: Header, Footer, QrModal, CookieModal + shared state
 │   │   ├── App.css                # Styling modern responsif & glassmorphism
 │   │   ├── index.css              # Reset, font, & styling global
-│   │   ├── main.jsx
-│   │   └── components/            # Komponen UI terpisah
-│   │       ├── Header.jsx             # Brand, status server & tombol cookies
-│   │       ├── HeroSection.jsx        # Judul hero & daftar platform
-│   │       ├── UrlInputCard.jsx       # Input URL, tempel, analisis & error banner
-│   │       ├── MediaBox.jsx           # Kartu inspeksi media (tabs + selector)
-│   │       ├── MediaPreview.jsx       # Thumbnail & metadata media
-│   │       ├── ModeTabs.jsx           # Tab mode Video / Audio
-│   │       ├── VideoFormatSelector.jsx# Selector resolusi, audio & kontainer video
-│   │       ├── AudioFormatSelector.jsx# Selector format, bitrate/sample rate & bit depth
-│   │       ├── DownloadActionCard.jsx # Tombol mulai unduhan
-│   │       ├── ProgressCard.jsx       # Progress unduhan real-time (SSE)
-│   │       ├── ProcessingCard.jsx     # Status muxing/konversi FFmpeg
-│   │       ├── ReadyBox.jsx           # Aksi unduh ke perangkat / QR
-│   │       ├── CleanedBanner.jsx      # Banner file server terhapus
-│   │       ├── FailedBanner.jsx       # Banner kegagalan
-│   │       ├── QrModal.jsx            # Modal QR transfer cross-device
-│   │       └── CookieModal.jsx        # Modal pengaturan cookies anti-bot
+│   │   ├── main.jsx               # Entry point (BrowserRouter + LocaleProvider)
+│   │   ├── contexts/
+│   │   │   └── LocaleContext.jsx  # React Context provider untuk i18n state
+│   │   ├── hooks/
+│   │   │   ├── useLocale.js       # Hook konsumsi locale context (t, setLocale, locale)
+│   │   │   └── useTheme.js        # Hook tema (auto/light/dark) + prefers-color-scheme
+│   │   ├── locales/
+│   │   │   ├── index.js           # Loader JSON + translate() helper
+│   │   │   ├── id.json            # String Indonesia
+│   │   │   └── en.json            # String English
+│   │   ├── utils/
+│   │   │   └── api.js             # fetchJson helper
+│   │   ├── components/            # Komponen UI terpisah
+│   │   │   ├── Header.jsx             # Brand, status server, tema, tombol cookies (route-aware)
+│   │   │   ├── Footer.jsx             # Copyright, link navigasi, GitHub, powered-by, language toggle
+│   │   │   ├── HeroSection.jsx        # Judul hero & daftar platform
+│   │   │   ├── UrlInputCard.jsx       # Input URL, tempel, analisis & error banner
+│   │   │   ├── MediaBox.jsx           # Kartu inspeksi media (tabs + selector)
+│   │   │   ├── MediaPreview.jsx       # Thumbnail & metadata media
+│   │   │   ├── ModeTabs.jsx           # Tab mode Video / Audio / Gambar / Playlist
+│   │   │   ├── VideoFormatSelector.jsx# Selector resolusi, audio & kontainer video
+│   │   │   ├── AudioFormatSelector.jsx# Selector format, bitrate/sample rate & bit depth
+│   │   │   ├── DownloadActionCard.jsx # Tombol mulai unduhan
+│   │   │   ├── ProgressCard.jsx       # Progress unduhan real-time (SSE)
+│   │   │   ├── ProcessingCard.jsx     # Status muxing/konversi FFmpeg
+│   │   │   ├── ReadyBox.jsx           # Aksi unduh ke perangkat / QR
+│   │   │   ├── CleanedBanner.jsx      # Banner file server terhapus
+│   │   │   ├── FailedBanner.jsx       # Banner kegagalan
+│   │   │   ├── QrModal.jsx            # Modal QR transfer cross-device
+│   │   │   ├── CookieModal.jsx        # Modal pengaturan cookies anti-bot
+│   │   │   └── shared.css             # Utilitas & styling bersama
+│   │   └── pages/
+│   │       ├── MainPage.jsx           # Route page: logika unduh utama
+│   │       └── Terms.jsx              # Route page: Syarat & Ketentuan (i18n)
 │   ├── .env.example                   # Env template (VITE_TURNSTILE_SITE_KEY, dll)
 │   ├── Dockerfile                     # Builder (vite) + nginx runtime
 │   ├── .dockerignore

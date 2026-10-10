@@ -7,7 +7,7 @@ const MediaPreview = ({ mediaInfo }) => (
       {mediaInfo.thumbnail ? (
         <img src={mediaInfo.thumbnail} alt={mediaInfo.title} className="thumbnail-img" />
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-dim)' }}>
+        <div className="thumb-placeholder">
           <Film size={36} />
         </div>
       )}
@@ -28,8 +28,7 @@ const MediaPreview = ({ mediaInfo }) => (
             href={mediaInfo.webpage_url}
             target="_blank"
             rel="noreferrer"
-            className="media-meta-item"
-            style={{ color: 'var(--accent-cyan)', textDecoration: 'none' }}
+            className="media-meta-item link-cyan"
           >
             <span>Buka Sumber</span>
             <ExternalLink size={13} />

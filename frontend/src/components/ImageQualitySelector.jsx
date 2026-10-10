@@ -1,5 +1,6 @@
 import { Image, Info } from 'lucide-react';
 import './ImageQualitySelector.css';
+import useLocale from '../hooks/useLocale';
 
 const ImageQualitySelector = ({
   imageQualities,
@@ -9,13 +10,15 @@ const ImageQualitySelector = ({
   selectedImageFormat,
   onSelectImageFormat
 }) => {
+  const { t } = useLocale();
+
   const qualityOptions = imageQualities || [
-    { value: 'best', label: 'Kualitas Tertinggi (Asli)', format: 'original', quality: null },
-    { value: 'high', label: 'Tinggi (85%)', format: 'webp', quality: 85 },
-    { value: 'medium', label: 'Sedang (75%)', format: 'webp', quality: 75 },
-    { value: 'low', label: 'Hemat (60%)', format: 'webp', quality: 60 },
-    { value: 'png', label: 'PNG (Lossless)', format: 'png', quality: null },
-    { value: 'jpg', label: 'JPG (90%)', format: 'jpg', quality: 90 }
+    { value: 'best', label: t('imageQuality.qualityBest'), format: 'original', quality: null },
+    { value: 'high', label: t('imageQuality.qualityHigh'), format: 'webp', quality: 85 },
+    { value: 'medium', label: t('imageQuality.qualityMedium'), format: 'webp', quality: 75 },
+    { value: 'low', label: t('imageQuality.qualityLow'), format: 'webp', quality: 60 },
+    { value: 'png', label: t('imageQuality.qualityPng'), format: 'png', quality: null },
+    { value: 'jpg', label: t('imageQuality.qualityJpg'), format: 'jpg', quality: 90 }
   ];
 
   const formatOptions = ['original', 'webp', 'jpg', 'png'];
@@ -25,18 +28,18 @@ const ImageQualitySelector = ({
       <div className="selector-group">
         <div className="group-label">
           <Image size={15} />
-          <span>Unduh Gambar dengan Kualitas Pilihan</span>
+          <span>{t('imageQuality.label')}</span>
         </div>
 
         {images && images.length > 0 && (
           <div className="image-quality-info">
-            <Info size={13} style={{ color: 'var(--text-dim)' }} />
-            <span>{images.length} gambar tersedia untuk diunduh</span>
+            <Info size={13} className="c-dim" />
+            <span>{t('imageQuality.imageCount', { count: images.length })}</span>
           </div>
         )}
 
         <div className="selector-group">
-          <label style={{ fontSize: '12px', color: 'var(--text-dim)' }}>Kualitas/Kompresi</label>
+          <label className="t-sm c-dim">{t('imageQuality.qualityLabel')}</label>
           <select
             className="select-control"
             value={selectedImageQuality}
@@ -51,7 +54,7 @@ const ImageQualitySelector = ({
         </div>
 
         <div className="selector-group">
-          <label style={{ fontSize: '12px', color: 'var(--text-dim)' }}>Format Output</label>
+          <label className="t-sm c-dim">{t('imageQuality.formatLabel')}</label>
           <select
             className="select-control"
             value={selectedImageFormat}
@@ -59,7 +62,7 @@ const ImageQualitySelector = ({
           >
             {formatOptions.map((fmt) => (
               <option key={fmt} value={fmt}>
-                {fmt === 'original' ? 'Original (Asli)' : fmt.toUpperCase()}
+                {fmt === 'original' ? t('imageQuality.formatOriginal') : fmt.toUpperCase()}
               </option>
             ))}
           </select>

@@ -1,5 +1,6 @@
 import { ListVideo, PlaySquare, CheckSquare, Square } from 'lucide-react';
 import './PlaylistSelector.css';
+import useLocale from '../hooks/useLocale';
 
 const PlaylistSelector = ({
   playlistItems = [],
@@ -10,6 +11,8 @@ const PlaylistSelector = ({
   isDownloading,
   playlistTitle
 }) => {
+  const { t } = useLocale();
+
   const handleToggle = (index) => {
     const newSelected = selectedItems.includes(index)
       ? selectedItems.filter(i => i !== index)
@@ -33,32 +36,30 @@ const PlaylistSelector = ({
     <div className="playlist-selector">
       <div className="playlist-header">
         <div className="playlist-title">
-          <ListVideo size={20} style={{ color: 'var(--accent-cyan)' }} />
-          <span>{playlistTitle || 'Playlist'}</span>
-          <span className="playlist-count">{totalItems} item{totalItems !== 1 ? 's' : ''}</span>
+          <ListVideo size={20} className="c-cyan" />
+          <span>{playlistTitle || t('playlist.title')}</span>
+          <span className="playlist-count">{totalItems} {totalItems !== 1 ? t('playlist.itemPlural') : t('playlist.itemSingular')}</span>
         </div>
 
         <div className="playlist-actions">
           <button
             type="button"
-            className="btn-secondary"
-            style={{ padding: '6px 14px', fontSize: '13px', gap: '6px' }}
+            className="btn-secondary btn-13 fl-row gap-6"
             onClick={handleSelectAll}
-            title={allSelected ? 'Batalkan pilihan semua' : 'Pilih semua'}
+            title={allSelected ? t('playlist.unselectAllTooltip') : t('playlist.selectAllTooltip')}
           >
             {allSelected ? <CheckSquare size={14} /> : <Square size={14} />}
-            <span>{allSelected ? 'Batalkan Semua' : 'Pilih Semua'}</span>
+            <span>{allSelected ? t('playlist.unselectAll') : t('playlist.selectAll')}</span>
           </button>
 
           <button
             type="button"
-            className="btn-primary"
-            style={{ padding: '8px 16px', fontSize: '13px', gap: '6px' }}
+            className="btn-primary btn-14 fl-row gap-6"
             onClick={() => onDownloadSelected(selectedItems)}
             disabled={isDownloading || totalSelected === 0}
           >
             <PlaySquare size={14} />
-            <span>Unduh Terpilih ({totalSelected})</span>
+            <span>{t('playlist.downloadSelected', { count: totalSelected })}</span>
           </button>
         </div>
       </div>
@@ -81,7 +82,7 @@ const PlaylistSelector = ({
                   {item.thumbnail ? (
                     <img src={item.thumbnail} alt={item.title} loading="lazy" />
                   ) : (
-                    <PlaySquare size={16} style={{ color: 'var(--text-dim)' }} />
+                    <PlaySquare size={16} className="c-dim" />
                   )}
                 </div>
               )}

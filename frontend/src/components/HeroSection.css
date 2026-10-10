@@ -15,7 +15,7 @@
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #38bdf8, #818cf8, #c084fc);
+  background: linear-gradient(135deg, var(--hero-gradient-1), var(--hero-gradient-2), var(--hero-gradient-3));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -40,7 +40,7 @@
   align-items: center;
   gap: 6px;
   padding: 5px 12px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--platform-pill-bg);
   border: 1px solid var(--border-subtle);
   border-radius: 9999px;
   font-size: 12px;
@@ -50,8 +50,8 @@
 }
 
 .platform-pill:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: #fff;
+  background: var(--platform-pill-bg-hover);
+  border-color: var(--platform-pill-border-hover);
+  color: var(--text-main);
   transform: translateY(-1px);
 }
