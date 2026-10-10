@@ -1,5 +1,9 @@
 # 🚀 MediaDown
 
+<a href="https://github.com/mdestagreddy/MediaDown">
+  <img src="https://img.shields.io/badge/Source%20Code-black?logo=github&style=for-the-badge" alt="GitHub">
+</a>
+
 Aplikasi pengunduh media sosial performa tinggi berbasis **yt-dlp** & **FFmpeg** dengan antarmuka web modern responsif (React).
 
 Dirancang khusus untuk melampaui website downloader pihak ketiga yang sering rusak karena pembaruan API sosmed (Instagram, TikTok, YouTube, Twitter/X, Facebook, Reddit, dsb).
@@ -60,6 +64,10 @@ Dirancang khusus untuk melampaui website downloader pihak ketiga yang sering rus
 
 12. **Server resilience**:
     - Handler `uncaughtException` / `unhandledRejection` mencegah server crash mendadak dan mencatat error ke log.
+
+13. **Anti Double-Click / Download Guard**:
+    - `useRef` guard mencegah trigger download ganda saat klik cepat pada tombol "Unduh Sekarang".
+    - QR modal tidak auto-tampil — hanya muncul saat user klik "Kirim ke HP / Perangkat Lain".
 
 ---
 
