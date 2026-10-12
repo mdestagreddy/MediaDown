@@ -177,7 +177,14 @@
     "unselectAll": "Unselect All",
     "selectAllTooltip": "Select all",
     "unselectAllTooltip": "Unselect all",
-    "downloadSelected": "Download Selected ({{count}})"
+    "downloadSelected": "Download Selected ({{count}})",
+    "qualitySettings": "Playlist Download Quality",
+    "modeVideoAudio": "Video + Audio",
+    "modeAudioOnly": "Audio Only",
+    "qualityBest": "Best Quality",
+    "qualityHigh": "High",
+    "qualityMedium": "Medium",
+    "qualityLow": "Low"
   },
   "videoFormat": {
     "label1": "1. Select Video Resolution Quality (Available from 144p to highest)",
@@ -262,7 +269,7 @@
     "cleaned": "Complete",
     "failed": "Failed"
   },
-  "qrModal": {
+   "qrModal": {
     "title": "Download on Another Device",
     "subtitle": "Scan the QR code below to download on another device.",
     "transferComplete": "Transfer the file to your device, then click Download below.",
@@ -270,7 +277,9 @@
     "wifiPrompt": "Make sure your phone or device is connected to the same Wi-Fi network",
     "scanQr": "then scan the following QR Code:",
     "directLink": "Direct Download Link:",
-    "autoDelete": "When your device finishes downloading, the file on the server will be automatically deleted."
+    "autoDelete": "When your device finishes downloading, the file on the server will be automatically deleted.",
+    "prompt": "Scan the QR code and download directly on your phone or other device.",
+    "playlistZipPrompt": "Scan the QR code to download all {{count}} files as a single ZIP archive on your device."
   },
   "cookieModal": {
     "title": "Bypass Anti-Bot & Cookies",

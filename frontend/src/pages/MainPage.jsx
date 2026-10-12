@@ -37,7 +37,9 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
     audioTargetFormat: 'mp3',
     audioBitrate: 'original',
     sampleRate: 'auto',
-    bitDepth: 'auto'
+    bitDepth: 'auto',
+    playlistDownloadMode: 'video',
+    playlistQuality: 'best'
   });
 
   const [imageSettings, setImageSettings] = useState({
@@ -337,6 +339,8 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
         imageFormat: imageSettings.imageFormat,
         playlistItems: selectedPlaylistItems,
         playlistMode: selectedPlaylistItems.length > 0 ? 'selected' : 'all',
+        playlistDownloadMode: audioSettings.playlistDownloadMode || 'video',
+        playlistQuality: audioSettings.playlistQuality || 'best',
         mediaEngine,
         turnstileToken
       };
@@ -442,14 +446,30 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
 
   const handleClientDownload = () => {
     if (!activeTask || !activeTask.id) return;
-    const downloadUrl = `/api/download/file/${activeTask.id}`;
 
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.setAttribute('download', activeTask.fileName || 'media');
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const isPlaylist = activeTask.mode === 'playlist' && activeTask.playlistFiles?.length > 0;
+
+    if (isPlaylist) {
+      // Download all playlist files as a single ZIP archive
+      const downloadUrl = `/api/download/playlist/${activeTask.id}`;
+      const zipName = `${activeTask.fileName || 'playlist'}.zip`;
+
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.setAttribute('download', zipName);
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      const downloadUrl = `/api/download/file/${activeTask.id}`;
+
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.setAttribute('download', activeTask.fileName || 'media');
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
   };
 
   const handleDeleteFromServer = async () => {

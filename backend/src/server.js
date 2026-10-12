@@ -5,6 +5,8 @@ const fs = require('fs');
 const QRCode = require('qrcode');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
+const archiver = require('archiver');
+const { PassThrough } = require('stream');
 
 const { getMediaInfo, downloadMedia } = require('./services/ytDlpService');
 const { getImageInfo, downloadImages } = require('./services/galleryDlService');
@@ -197,9 +199,11 @@ app.post('/api/download', async (req, res) => {
     title = 'media',
     imageQuality = 'best',
     imageFormat = 'original',
-    playlistItems = [],
-    playlistMode = 'all',
-    mediaEngine = 'auto',
+     playlistItems = [],
+     playlistMode = 'all',
+     playlistDownloadMode = 'video',
+     playlistQuality = 'best',
+     mediaEngine = 'auto',
     totalImages = 0,
     turnstileToken
   } = req.body;
@@ -227,9 +231,11 @@ app.post('/api/download', async (req, res) => {
     bitDepth,
     imageQuality,
     imageFormat,
-    playlistItems,
-    playlistMode,
-    mediaEngine
+     playlistItems,
+     playlistMode,
+     playlistDownloadMode,
+     playlistQuality,
+     mediaEngine
   });
 
   res.json({
@@ -483,6 +489,77 @@ app.get('/api/download/file/:taskId/:filename', (req, res) => {
   fileStream.pipe(res);
 });
 
+// Download all playlist files as a ZIP archive
+app.get('/api/download/playlist/:taskId', (req, res) => {
+  const { taskId } = req.params;
+  const task = taskManager.getTask(taskId);
+
+  if (!task) {
+    return res.status(404).json({ error: 'Tugas tidak ditemukan.' });
+  }
+
+  if (task.isCleaned || !task.filePath || !fs.existsSync(task.filePath)) {
+    return res.status(410).json({
+      error: 'File sudah selesai diunduh dan telah dibersihkan dari server.'
+    });
+  }
+
+  // Get all playlist files
+  let playlistFiles = task.playlistFiles || [];
+  if (playlistFiles.length === 0 && task.fileName) {
+    playlistFiles = [{ name: task.fileName, path: task.filePath, size: task.fileSize }];
+  }
+
+  if (playlistFiles.length === 0) {
+    return res.status(404).json({ error: 'Tidak ada file untuk diunduh.' });
+  }
+
+  // Track active download transfer
+  taskManager.startDownload(taskId);
+
+  const archive = archiver('zip', {
+    zlib: { level: 9 }
+  });
+
+  let errored = false;
+
+  archive.on('error', (err) => {
+    errored = true;
+    taskManager.endDownload(taskId);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Gagal membuat arsip ZIP.' });
+    }
+  });
+
+  const zipName = task.fileName ? `${task.fileName}.zip` : 'playlist.zip';
+
+  res.attachment(zipName);
+  res.setHeader('Content-Type', 'application/zip');
+
+  archive.pipe(res);
+
+  // Add each file to the archive
+  for (const file of playlistFiles) {
+    const filePath = file.path || path.join(path.dirname(task.filePath), file.name);
+    if (fs.existsSync(filePath)) {
+      archive.file(filePath, { name: file.name });
+    }
+  }
+
+  archive.finalize();
+
+  // Cleanup after complete download or client disconnect
+  const cleanupHandler = () => {
+    if (errored) return;
+    taskManager.endDownload(taskId);
+    console.log(`[Playlist ZIP Complete] Task ${taskId} - ${playlistFiles.length} files zipped.`);
+    taskManager.markDownloaded(taskId);
+  };
+
+  res.on('finish', cleanupHandler);
+  res.on('close', cleanupHandler);
+});
+
 // Preview media file in-browser (inline) without triggering auto-cleanup
 const mime = require('mime-types');
 
@@ -540,7 +617,19 @@ app.get('/api/qrcode/:taskId', async (req, res) => {
   }
 
   const localIp = getLocalIp();
-  const directDownloadUrl = `http://${localIp}:${PORT}/api/download/file/${taskId}`;
+  const baseUrl = `http://${localIp}:${PORT}`;
+
+  // For playlist tasks, generate QR code with a playlist info endpoint URL
+  // so the device can list and download all files
+  let directDownloadUrl;
+  let isPlaylist = false;
+
+  if (task.mode === 'playlist' && Array.isArray(task.playlistFiles) && task.playlistFiles.length > 1) {
+    isPlaylist = true;
+    directDownloadUrl = `${baseUrl}/api/playlist/${taskId}`;
+  } else {
+    directDownloadUrl = `${baseUrl}/api/download/file/${taskId}`;
+  }
 
   try {
     const qrDataUrl = await QRCode.toDataURL(directDownloadUrl, {
@@ -555,7 +644,9 @@ app.get('/api/qrcode/:taskId', async (req, res) => {
     res.json({
       success: true,
       qrDataUrl,
-      downloadUrl: directDownloadUrl
+      downloadUrl: directDownloadUrl,
+      isPlaylist,
+      playlistFiles: task.playlistFiles || []
     });
   } catch (err) {
     res.status(500).json({ error: 'Gagal membuat QR Code.' });

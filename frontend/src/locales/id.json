@@ -177,7 +177,14 @@
     "unselectAll": "Batalkan Semua",
     "selectAllTooltip": "Pilih semua",
     "unselectAllTooltip": "Batalkan pilihan semua",
-    "downloadSelected": "Unduh Terpilih ({{count}})"
+    "downloadSelected": "Unduh Terpilih ({{count}})",
+    "qualitySettings": "Kualitas Unduh Playlist",
+    "modeVideoAudio": "Video + Audio",
+    "modeAudioOnly": "Audio Saja",
+    "qualityBest": "Kualitas Terbaik",
+    "qualityHigh": "Tinggi",
+    "qualityMedium": "Sedang",
+    "qualityLow": "Rendah"
   },
   "videoFormat": {
     "label1": "1. Pilih Kualitas Resolusi Video (Tersedia dari 144p hingga tertinggi)",
@@ -292,7 +299,9 @@
     "wifiPrompt": "Pastikan ponsel atau perangkat Anda terhubung ke jaringan Wi-Fi yang sama",
     "scanQr": "lalu scan QR Code berikut:",
     "directLink": "Tautan Unduh Langsung:",
-    "autoDelete": "Saat ponsel Anda selesai mengunduh, file di server akan otomatis langsung terhapus."
+    "autoDelete": "Saat ponsel Anda selesai mengunduh, file di server akan otomatis langsung terhapus.",
+    "prompt": "Pindai kode QR dan unduh langsung di ponsel atau perangkat lain Anda.",
+    "playlistZipPrompt": "Pindai kode QR untuk mengunduh semua {{count}} file sebagai satu arsip ZIP."
   },
   "cookieModal": {
     "title": "Bypass Anti-Bot & Cookies",

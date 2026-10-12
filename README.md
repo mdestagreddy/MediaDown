@@ -84,7 +84,13 @@ Dirancang khusus untuk melampaui website downloader pihak ketiga yang sering rus
     - Tombol "Hapus File dari Server Sekarang" di *Ready Box* memungkinkan hapus manual file.
     - File otomatis dihapus setelah unduh berhasil (auto-cleanup).
 
-16. **FAQ Page**:
+16. **Playlist Metadata & Quality Selection**:
+    - Ekstraksi metadata penuh untuk setiap item playlist (judul, artis/uploader, durasi, cover/artwork) pada platform seperti SoundCloud, YouTube Music, dan lainnya.
+    - Menggunakan `--yes-playlist` dengan `--playlist-end 100` untuk mengambil hingga 100 item pertama dengan metadata lengkap.
+    - Pemilihan kualitas untuk playlist: pilih mode unduh (Video + Audio atau Audio Only) dan kualitas (Best, High, Medium, Low) sebelum memulai unduh.
+    - Auto-detect: jika konten hanya audio (mis. SoundCloud), tab "Video + Audio" otomatis disembunyikan.
+
+17. **FAQ Page**:
     - Halaman `/faq` dengan 10 pertanyaan umum (multi-bahasa).
 
 ---

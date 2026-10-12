@@ -4,6 +4,34 @@
   gap: 16px;
 }
 
+.playlist-quality-section {
+  padding: 14px 16px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.quality-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 10px;
+}
+
+.playlist-quality-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.playlist-quality-row .selector-group {
+  flex: 1;
+  min-width: 140px;
+}
+
 .playlist-header {
   display: flex;
   justify-content: space-between;
@@ -75,7 +103,7 @@
 
 .playlist-item-thumb {
   width: 50px;
-  height: 30px;
+  height: 50px;
   border-radius: 4px;
   overflow: hidden;
   background: var(--thumbnail-bg);

@@ -5,6 +5,8 @@ import AudioFormatSelector from './AudioFormatSelector';
 import DownloadActionCard from './DownloadActionCard';
 import ImageQualitySelector from './ImageQualitySelector';
 import PlaylistSelector from './PlaylistSelector';
+import { Sliders } from 'lucide-react';
+import useLocale from '../hooks/useLocale';
 import './MediaBox.css';
 
 const MediaBox = ({
@@ -24,7 +26,10 @@ const MediaBox = ({
   selectedPlaylistItems,
   onPlaylistSelectionChange,
   onDownloadPlaylistSelected
-}) => (
+}) => {
+  const { t } = useLocale();
+
+  return (
   <div className="media-box">
     {/* Preview details */}
     <MediaPreview mediaInfo={mediaInfo} />
@@ -73,14 +78,46 @@ const MediaBox = ({
 
     {/* Playlist Mode Content */}
     {mode === 'playlist' && mediaInfo?.isPlaylist && (
-      <PlaylistSelector
-        playlistItems={playlistItems || mediaInfo.playlistItems || []}
-        selectedItems={selectedPlaylistItems}
-        onSelectionChange={onPlaylistSelectionChange}
-        onDownloadSelected={onDownloadPlaylistSelected}
-        isDownloading={isStartingDownload}
-        playlistTitle={mediaInfo.title}
-      />
+      <>
+        <div className="playlist-quality-section">
+          <div className="quality-label">
+            <Sliders size={15} />
+            <span>{t('playlist.qualitySettings')}</span>
+          </div>
+          <div className="playlist-quality-row">
+            <div className="selector-group">
+              <select
+                className="select-control"
+                defaultValue="video"
+                onChange={(e) => onAudioSettingChange('playlistDownloadMode', e.target.value)}
+              >
+                <option value="video">{t('playlist.modeVideoAudio')}</option>
+                <option value="audio">{t('playlist.modeAudioOnly')}</option>
+              </select>
+            </div>
+            <div className="selector-group">
+              <select
+                className="select-control"
+                defaultValue="best"
+                onChange={(e) => onAudioSettingChange('playlistQuality', e.target.value)}
+              >
+                <option value="best">{t('playlist.qualityBest')}</option>
+                <option value="high">{t('playlist.qualityHigh')}</option>
+                <option value="medium">{t('playlist.qualityMedium')}</option>
+                <option value="low">{t('playlist.qualityLow')}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <PlaylistSelector
+          playlistItems={playlistItems || mediaInfo.playlistItems || []}
+          selectedItems={selectedPlaylistItems}
+          onSelectionChange={onPlaylistSelectionChange}
+          onDownloadSelected={onDownloadPlaylistSelected}
+          isDownloading={isStartingDownload}
+          playlistTitle={mediaInfo.title}
+        />
+      </>
     )}
 
     {/* Start Download Button */}
@@ -94,6 +131,7 @@ const MediaBox = ({
       />
     )}
   </div>
-);
+  );
+};
 
 export default MediaBox;

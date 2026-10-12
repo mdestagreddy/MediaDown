@@ -34,9 +34,13 @@ async function getMediaInfo(url, options = {}) {
       url
     ];
 
-    // For playlist, don't use --no-playlist; use --flat-playlist for metadata listing
+    // For playlist, use --yes-playlist to fetch full metadata for each entry
+    // (including title, uploader, thumbnail, duration). Limit to 100 items for
+    // performance. For non-playlist URLs, use --no-playlist to get single video info.
     if (includePlaylist) {
-      args.push('--flat-playlist');
+      args.push('--yes-playlist');
+      args.push('--playlist-start', '1');
+      args.push('--playlist-end', '100');
     } else {
       args.push('--no-playlist');
     }
@@ -226,24 +230,53 @@ function processPlaylistInfo(info) {
   const entries = Array.isArray(info.entries) ? info.entries : [];
 
   const playlistItems = entries.map((entry, index) => {
-    const isProcessed = entry && typeof entry === 'object' && entry.formats;
-    const title = entry?.title || `Item ${index + 1}`;
-    const id = entry?.id || entry?.url || '';
-
-    let thumbnail = entry?.thumbnail || '';
-    if (!thumbnail && Array.isArray(entry?.thumbnails) && entry.thumbnails.length > 0) {
-      thumbnail = entry.thumbnails[entry.thumbnails.length - 1].url;
+    if (!entry || typeof entry !== 'object') {
+      return {
+        index,
+        id: '',
+        title: `Item ${index + 1}`,
+        url: '',
+        thumbnail: '',
+        duration: 0,
+        durationFormatted: '00:00',
+        uploader: 'Unknown',
+        isProcessed: false
+      };
     }
+
+    const isProcessed = !!entry.formats;
+    let title = entry.title || entry.name || `Item ${index + 1}`;
+    const id = entry.id || entry.url || '';
+
+    let uploader = entry.uploader || entry.channel || entry.artist || entry.uploader_id || entry.creator;
+
+    // For some platforms (e.g. SoundCloud), flat-playlist entries may have
+    // the artist name embedded in the title (e.g. "Artist - Track Title").
+    // Try to extract the uploader if not already set.
+    if (!uploader && typeof title === 'string' && title.includes(' - ')) {
+      const parts = title.split(' - ');
+      if (parts.length >= 2) {
+        uploader = parts[0].trim();
+      }
+    }
+
+    let thumbnail = entry.thumbnail || '';
+    if (!thumbnail && Array.isArray(entry.thumbnails) && entry.thumbnails.length > 0) {
+      const lastThumb = entry.thumbnails[entry.thumbnails.length - 1];
+      thumbnail = lastThumb?.url || lastThumb;
+    }
+
+    const duration = entry.duration || entry.duration_ms || 0;
 
     return {
       index,
       id,
       title,
-      url: entry?.webpage_url || entry?.url || '',
+      url: entry.webpage_url || entry.url || '',
       thumbnail: thumbnail,
-      duration: entry?.duration || 0,
-      durationFormatted: formatDuration(entry?.duration || 0),
-      uploader: entry?.uploader || entry?.channel || 'Unknown',
+      duration: duration,
+      durationFormatted: formatDuration(duration),
+      uploader: uploader || 'Unknown',
       isProcessed: !!isProcessed
     };
   });
@@ -267,7 +300,7 @@ function processPlaylistInfo(info) {
     webpage_url: info.webpage_url || info.original_url || '',
     uploader: info.uploader || info.channel || info.creator || 'Unknown',
     playlistItems: playlistItems,
-    hasNext: Array.isArray(info.entries) && info.entries.length >= 100 ? !!info.entries.find(e => e && typeof e === 'object' && e._type === 'url') : false
+     hasNext: Array.isArray(info.entries) && info.entries.length >= 100
   };
 }
 
@@ -289,6 +322,8 @@ function downloadMedia({
   imageFormat = 'original',
   playlistItems: selectedItems = [],
   playlistMode = 'all', // 'all' | 'selected'
+  playlistDownloadMode = 'video', // 'video' | 'audio' (for playlist mode)
+  playlistQuality = 'best', // 'best' | 'high' | 'medium' | 'low' (for playlist mode)
   onProgress,
   onLog
 }) {
@@ -313,6 +348,49 @@ function downloadMedia({
         // Convert indices (1-based) to yt-dlp playlist-items format
         const itemStr = selectedItems.map(i => i + 1).join(',');
         args.push('--playlist-items', itemStr);
+      }
+
+      // Apply playlist-specific quality settings
+      if (playlistDownloadMode === 'audio') {
+        // Audio-only playlist: extract audio with specified format/quality
+        args.push('-x');
+        const YTDLP_FORMAT_MAP = { ogg: 'vorbis' };
+        const ytDlpFormat = YTDLP_FORMAT_MAP[audioFormat] || audioFormat;
+        if (ytDlpFormat !== 'original') {
+          args.push('--audio-format', ytDlpFormat);
+        }
+
+        if (audioFormat === 'wav' || audioFormat === 'flac') {
+          // Handle lossless formats
+          if (sampleRate && sampleRate !== 'auto') {
+            args.push('--postprocessor-args', `ExtractAudio:-ar ${sampleRate}`);
+          }
+        } else {
+          // Lossy format: apply quality mapping
+          if (audioQuality && audioQuality !== 'best' && audioQuality !== 'original') {
+            if (ytDlpFormat === 'vorbis') {
+              const vbrQuality = bitrateToVbrQuality(audioQuality, ytDlpFormat);
+              if (vbrQuality) args.push('--audio-quality', vbrQuality);
+            } else if (ytDlpFormat === 'opus') {
+              const kbps = parseInt(audioQuality, 10);
+              if (!isNaN(kbps)) {
+                args.push('--postprocessor-args', `ExtractAudio:-c:a libopus -b:a ${kbps}k -vbr off`);
+              }
+            } else {
+              args.push('--audio-quality', audioQuality);
+            }
+          }
+        }
+      } else {
+        // Video + Audio playlist: apply quality mapping
+        const qualityMap = {
+          'best': 'bestvideo+bestaudio/best',
+          'high': 'bv*[height>=720]+ba[ext!=ogg]/bv*[height>=720]+ba',
+          'medium': 'bv*[height>=480]+ba[ext!=ogg]/bv*[height>=480]+ba',
+          'low': 'bv*[height>=240]+ba[ext!=ogg]/bv*[height>=240]+ba'
+        };
+        const qualitySelector = qualityMap[playlistQuality] || qualityMap['best'];
+        args.push('-f', qualitySelector);
       }
     } else {
       args.push('--no-playlist');

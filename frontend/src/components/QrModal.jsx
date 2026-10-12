@@ -36,6 +36,13 @@ const QrModal = ({ qrData, networkInfo, onClose, visible }) => {
           )}
         </div>
 
+        <div className="qr-description t-sm c-muted">
+          {qrData?.isPlaylist
+            ? t('qrModal.playlistZipPrompt', { count: qrData?.playlistFiles?.length || 0 })
+            : t('qrModal.prompt')
+          }
+        </div>
+
         {qrData?.downloadUrl && (
           <div className="w-100">
             <div className="t-xs c-dim mb-4">
