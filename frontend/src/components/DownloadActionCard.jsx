@@ -2,6 +2,15 @@ import { Download, RefreshCw } from 'lucide-react';
 import './DownloadActionCard.css';
 import useLocale from '../hooks/useLocale';
 
+const AUDIO_FORMAT_DISPLAY = {
+  mp3: 'MP3',
+  m4a: 'M4A',
+  vorbis: 'OGG',
+  opus: 'OPUS',
+  wav: 'WAV',
+  flac: 'FLAC',
+};
+
 const DownloadActionCard = ({
   mode,
   videoContainer,
@@ -13,7 +22,10 @@ const DownloadActionCard = ({
 
   const modeLabel = () => {
     if (mode === 'video') return t('downloadAction.video', { container: videoContainer.toUpperCase() });
-    if (mode === 'audio') return t('downloadAction.audio', { format: audioTargetFormat.toUpperCase() });
+    if (mode === 'audio') {
+      const fmt = AUDIO_FORMAT_DISPLAY[audioTargetFormat] || audioTargetFormat.toUpperCase();
+      return t('downloadAction.audio', { format: fmt });
+    }
     if (mode === 'image') return t('downloadAction.image');
     return '';
   };

@@ -32,7 +32,7 @@ const AudioFormatSelector = ({
             <optgroup label={t('audioFormat.lossyGroup')}>
               <option value="mp3">{t('audioFormat.mp3Desc')}</option>
               <option value="m4a">{t('audioFormat.m4aDesc')}</option>
-              <option value="ogg">{t('audioFormat.oggDesc')}</option>
+              <option value="vorbis">{t('audioFormat.oggDesc')}</option>
             </optgroup>
             <optgroup label={t('audioFormat.losslessGroup')}>
               <option value="wav">{t('audioFormat.wavDesc')}</option>

@@ -337,12 +337,15 @@ function downloadMedia({
           args.push('--postprocessor-args', `ConvertThumbnails:-q:v ${100 - imageQuality}`);
         }
       }
-    } else if (mode === 'audio') {
+     } else if (mode === 'audio') {
       // Audio Extraction Mode
       const formatSelector = audioFormatId && audioFormatId !== 'best' ? audioFormatId : 'bestaudio/best';
       args.push('-f', formatSelector);
       args.push('-x');
-      args.push('--audio-format', audioFormat);
+      // Map frontend format values to yt-dlp accepted codecs
+      const YTDLP_FORMAT_MAP = { ogg: 'vorbis' };
+      const ytDlpFormat = YTDLP_FORMAT_MAP[audioFormat] || audioFormat;
+      args.push('--audio-format', ytDlpFormat);
 
       const isLossless = audioFormat === 'wav' || audioFormat === 'flac';
 
@@ -373,9 +376,17 @@ function downloadMedia({
           args.push('--postprocessor-args', `ExtractAudio:${postArgs.join(' ')}`);
         }
       } else {
-        // Lossy (mp3, m4a, ogg): bitrate quality
+        // Lossy (mp3, m4a, vorbis, opus): bitrate/quality
         if (audioQuality && audioQuality !== 'best') {
-          args.push('--audio-quality', audioQuality);
+          // Vorbis & Opus use VBR quality levels (0-10), not bitrate strings
+          if (ytDlpFormat === 'vorbis' || ytDlpFormat === 'opus') {
+            const vbrQuality = bitrateToVbrQuality(audioQuality);
+            if (vbrQuality) {
+              args.push('--audio-quality', vbrQuality);
+            }
+          } else {
+            args.push('--audio-quality', audioQuality);
+          }
         }
       }
     } else {
@@ -558,6 +569,24 @@ function parseEtaStr(etaStr) {
     return { hours: 0, minutes: parts[0], seconds: parts[1] };
   }
   return '';
+}
+
+/**
+ * Map bitrate strings (e.g. "320k") to VBR quality levels for
+ * Vorbis (−1..10) / Opus (−1..10) since yt-dlp's --audio-quality
+ * expects quality not bitrate for these codecs.
+ */
+function bitrateToVbrQuality(bitrate) {
+  if (!bitrate || bitrate === 'best' || bitrate === 'auto') return null;
+  const kbps = parseInt(bitrate, 10);
+  if (isNaN(kbps)) return null;
+  if (kbps >= 320) return '10';
+  if (kbps >= 256) return '8';
+  if (kbps >= 192) return '6';
+  if (kbps >= 128) return '5';
+  if (kbps >= 96) return '3';
+  if (kbps >= 64) return '1';
+  return '5';
 }
 
 function formatBytes(bytes) {
