@@ -131,8 +131,8 @@ const ReadyBox = ({ task, onClientDownload, onOpenQrModal, onDeleteFromServer })
         </div>
       </div>
 
-      {/* Media Preview Section */}
-      {renderPreview()}
+      {/* Media Preview Section - only for single file downloads */}
+      {!isPlaylist && renderPreview()}
 
       <div className="ready-buttons-row">
         <button

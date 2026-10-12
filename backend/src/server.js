@@ -5,7 +5,7 @@ const fs = require('fs');
 const QRCode = require('qrcode');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
-const archiver = require('archiver').Archiver;
+const { ZipArchive } = require('archiver');
 const { PassThrough } = require('stream');
 
 const { getMediaInfo, downloadMedia } = require('./services/ytDlpService');
@@ -498,26 +498,22 @@ app.get('/api/download/playlist/:taskId', (req, res) => {
     return res.status(404).json({ error: 'Tugas tidak ditemukan.' });
   }
 
-  if (task.isCleaned || !task.filePath || !fs.existsSync(task.filePath)) {
-    return res.status(410).json({
-      error: 'File sudah selesai diunduh dan telah dibersihkan dari server.'
-    });
-  }
-
-  // Get all playlist files
-  let playlistFiles = task.playlistFiles || [];
-  if (playlistFiles.length === 0 && task.fileName) {
-    playlistFiles = [{ name: task.fileName, path: task.filePath, size: task.fileSize }];
-  }
-
+  // For playlist mode, verify we have playlist files
+  const playlistFiles = task.playlistFiles || [];
   if (playlistFiles.length === 0) {
-    return res.status(404).json({ error: 'Tidak ada file untuk diunduh.' });
+    return res.status(404).json({ error: 'Tidak ada file playlist untuk diunduh.' });
+  }
+
+  // Verify files exist on disk
+  const validFiles = playlistFiles.filter(f => f.path && fs.existsSync(f.path));
+  if (validFiles.length === 0) {
+    return res.status(404).json({ error: 'File playlist tidak ditemukan di server.' });
   }
 
   // Track active download transfer
   taskManager.startDownload(taskId);
 
-  const archive = new archiver('zip', {
+  const archive = new ZipArchive({
     zlib: { level: 9 }
   });
 
@@ -531,7 +527,11 @@ app.get('/api/download/playlist/:taskId', (req, res) => {
     }
   });
 
-  const zipName = task.fileName ? `${task.fileName}.zip` : 'playlist.zip';
+  // Use playlist title for ZIP filename, or fallback to "playlist"
+  const safeTitle = (task.title || 'playlist')
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '_')
+    .substring(0, 50);
+  const zipName = `${safeTitle}.zip`;
 
   res.attachment(zipName);
   res.setHeader('Content-Type', 'application/zip');
@@ -539,11 +539,8 @@ app.get('/api/download/playlist/:taskId', (req, res) => {
   archive.pipe(res);
 
   // Add each file to the archive
-  for (const file of playlistFiles) {
-    const filePath = file.path || path.join(path.dirname(task.filePath), file.name);
-    if (fs.existsSync(filePath)) {
-      archive.file(filePath, { name: file.name });
-    }
+  for (const file of validFiles) {
+    archive.file(file.path, { name: file.name });
   }
 
   archive.finalize();
@@ -552,7 +549,7 @@ app.get('/api/download/playlist/:taskId', (req, res) => {
   const cleanupHandler = () => {
     if (errored) return;
     taskManager.endDownload(taskId);
-    console.log(`[Playlist ZIP Complete] Task ${taskId} - ${playlistFiles.length} files zipped.`);
+    console.log(`[Playlist ZIP Complete] Task ${taskId} - ${validFiles.length} files zipped.`);
     taskManager.markDownloaded(taskId);
   };
 
