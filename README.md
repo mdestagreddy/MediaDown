@@ -34,18 +34,22 @@ Dirancang khusus untuk melampaui website downloader pihak ketiga yang sering rus
    - Sediakan tombol unduh langsung ke komputer ini atau **scan QR Code / buka URL** dari HP / tablet di jaringan Wi-Fi yang sama untuk langsung mengirim dan mengunduh ke perangkat tersebut.
 
 5. **Auto-Cleanup / Auto-Wipe Server**:
-   - Begitu file selesai diunduh oleh perangkat klien atau HP, server secara otomatis langsung menghapus file dari hard disk server demi menjaga privasi dan menghemat ruang penyimpanan.
-   - Dilengkapi pembersih berkala (sweeper) untuk menghapus file yang tidak diunduh setelah 15 menit.
+    - Begitu file selesai diunduh oleh perangkat klien atau HP, server secara otomatis langsung menghapus file dari hard disk server demi menjaga privasi dan menghemat ruang penyimpanan.
+    - File juga otomatis dihapus saat koneksi klien terputus (refresh halaman, menutup browser/tab, ganti URL) — timer SSE disconnect membersihkan file yang siap dalam 5 detik jika tidak ada koneksi ulang.
+    - Dilengkapi pembersih berkala (sweeper) untuk menghapus file yang tidak diunduh setelah 15 menit.
 
 6. **Frontend Modern & Responsif**:
     - Desain gelap berkelas (*Cyber-Dark Glassmorphic*), animasi transisi mulus, indikator progress real-time (persen, kecepatan unduh, estimasi sisa waktu via Server-Sent Events).
+    - Tampilan log terminal lengkap di bawah progress card — meliputi semua output yt-dlp/gallery-dl (URL, kecepatan, status FFmpeg muxing) dengan auto-scroll ke entri terbaru.
+    - Informasi progres byte-level (`15.2 MB / 33.4 MB`) untuk unduhan video/audio, dan hitungan file (`3/10`) untuk galeri gambar.
     - Nyaman digunakan baik di layar HP, tablet, maupun desktop PC.
     - **Tema Terang/Gelap otomatis**: mendeteksi preferensi perangkat (`prefers-color-scheme`). Toggle manual via ikon di header (Auto ↔ Terang ↔ Gelap), pilihan tersimpan di *localStorage*.
+    - **Multi-Language Support (i18n)** dilengkapi di bawah.
 
 7. **Multi-Language Support (i18n):**
-   - Bahasa Indonesia & English (auto-detect dari perangkat atau pilih manual).
-   - Semua string teks disimpan dalam file JSON (`src/locales/id.json`, `src/locales/en.json`).
-   - Toggle bahasa tersedia di footer; preferensi disimpan di *localStorage*.
+    - Bahasa Indonesia & English (auto-detect dari perangkat atau pilih manual).
+    - Semua string teks disimpan dalam file JSON (`src/locales/id.json`, `src/locales/en.json`).
+    - Toggle bahasa tersedia di footer; preferensi disimpan di *localStorage*.
 
 8. **Queue-Based Download Processing**:
    - Unduhan diproses secara berurut dengan kontrol concurrency (`MAX_CONCURRENT`, default 4) agar server tidak kelebihan beban.
@@ -68,6 +72,17 @@ Dirancang khusus untuk melampaui website downloader pihak ketiga yang sering rus
 13. **Anti Double-Click / Download Guard**:
     - `useRef` guard mencegah trigger download ganda saat klik cepat pada tombol "Unduh Sekarang".
     - QR modal tidak auto-tampil — hanya muncul saat user klik "Kirim ke HP / Perangkat Lain".
+
+14. **Media Preview Before Download**:
+    - Di halaman *Ready*, tonton dengar pratinjau video/audio/gambar langsung di browser sebelum mengunduh.
+    - Endpoint `/api/preview/:taskId/:filename?` melayani file dengan `Content-Disposition: inline`.
+
+15. **Manual Server File Deletion**:
+    - Tombol "Hapus File dari Server Sekarang" di *Ready Box* memungkinkan hapus manual file.
+    - File otomatis dihapus setelah unduh berhasil (auto-cleanup).
+
+16. **FAQ Page**:
+    - Halaman `/faq` dengan 10 pertanyaan umum (multi-bahasa).
 
 ---
 
@@ -181,7 +196,8 @@ MediaDown/
 │   │   ├── server.js              # Express API & Server-Sent Events
 │   │   ├── services/
 │   │   │   ├── ytDlpService.js    # Ekstraksi metadata & engine unduhan yt-dlp
-│   │   │   └── taskManager.js     # Manajemen task, SSE, & auto-cleanup server
+│   │   │   ├── galleryDlService.js# Engine unduhan gambar via gallery-dl
+│   │   │   └── taskManager.js     # Manajemen task, SSE, log & auto-cleanup server
 │   │   └── utils/
 │   │       └── network.js         # Deteksi otomatis IP LAN untuk QR transfer
 │   ├── .env.example               # Env template (TURNSTILE_SECRET_KEY, engine paths)
@@ -216,8 +232,8 @@ MediaDown/
 │   │   │   ├── VideoFormatSelector.jsx# Selector resolusi, audio & kontainer video
 │   │   │   ├── AudioFormatSelector.jsx# Selector format, bitrate/sample rate & bit depth
 │   │   │   ├── DownloadActionCard.jsx # Tombol mulai unduhan
-│   │   │   ├── ProgressCard.jsx       # Progress unduhan real-time (SSE)
-│   │   │   ├── ProcessingCard.jsx     # Status muxing/konversi FFmpeg
+│   │   │   ├── ProgressCard.jsx       # Progress unduhan real-time + log terminal via SSE
+│   │   │   ├── ProcessingCard.jsx     # Status muxing/konversi FFmpeg + log terminal
 │   │   │   ├── ReadyBox.jsx           # Aksi unduh ke perangkat / QR
 │   │   │   ├── CleanedBanner.jsx      # Banner file server terhapus
 │   │   │   ├── FailedBanner.jsx       # Banner kegagalan

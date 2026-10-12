@@ -10,6 +10,7 @@ class TaskManager {
     this.maxConcurrent = parseInt(process.env.MAX_CONCURRENT) || 4;
     this.activeCount = 0;
     this.queue = []; // Array of { taskId, downloadFn, resolve, reject }
+    this.MAX_LOG_LINES = 200;
 
     // Ensure downloads base directory exists
     if (!fs.existsSync(this.downloadsDir)) {
@@ -46,8 +47,14 @@ class TaskManager {
       error: null,
       queuePosition: null,
       createdAt: Date.now(),
-      downloadedCount: 0,
+       downloadedCount: 0,
       isCleaned: false,
+      activeDownloads: 0,
+      sseDisconnectTimer: null,
+      downloadedBytes: 0,
+      totalBytes: 0,
+      logs: [],
+      _logBroadcastTimer: null,
       sseClients: new Set(),
       ...metadata
     };
@@ -66,9 +73,43 @@ class TaskManager {
 
     Object.assign(task, updates);
 
+    // Cancel any pending log broadcast since we're broadcasting now
+    if (task._logBroadcastTimer) {
+      clearTimeout(task._logBroadcastTimer);
+      task._logBroadcastTimer = null;
+    }
+
     // Notify connected SSE listeners
     this.broadcast(task);
     return task;
+  }
+
+  /**
+   * Append a log line to a task. Uses a short debounce on the SSE
+   * broadcast so that bursts of log lines (e.g. gallery-dl stdout)
+   * don't flood connected clients. A subsequent updateTask call
+   * will cancel the debounce and broadcast immediately.
+   */
+  addLog(id, message) {
+    const task = this.tasks.get(id);
+    if (!task) return;
+
+    task.logs.push(message);
+    if (task.logs.length > this.MAX_LOG_LINES) {
+      task.logs = task.logs.slice(-this.MAX_LOG_LINES);
+    }
+
+    // Schedule a debounced broadcast for log-only updates
+    if (task._logBroadcastTimer) {
+      clearTimeout(task._logBroadcastTimer);
+    }
+    task._logBroadcastTimer = setTimeout(() => {
+      const currentTask = this.tasks.get(id);
+      if (currentTask) {
+        currentTask._logBroadcastTimer = null;
+        this.broadcast(currentTask);
+      }
+    }, 100);
   }
 
   /**
@@ -86,11 +127,13 @@ class TaskManager {
           status: 'queued',
           queuePosition: position + 1
         });
+        this.addLog(taskId, `Antrean - posisi ${position + 1}. Menunggu giliran...`);
       } else {
         this.updateTask(taskId, {
           status: 'downloading',
           queuePosition: null
         });
+        this.addLog(taskId, 'Mulai mengunduh dari server platform media sosial...');
       }
 
       this.queue.push({ taskId, downloadFn, resolve, reject });
@@ -131,6 +174,8 @@ class TaskManager {
           progress: 100,
           speed: '',
           eta: '',
+          downloadedBytes: task.fileSize || 0,
+          totalBytes: task.fileSize || 0,
           message: 'File siap diunduh ke perangkat Anda!',
           fileName: result.fileName,
           filePath: result.filePath,
@@ -138,6 +183,7 @@ class TaskManager {
           formattedSize: result.formattedSize,
           playlistFiles: result.playlistFiles || []
         });
+        this.addLog(next.taskId, `Unduhan selesai! File siap: ${result.fileName || 'media'}`);
         next.resolve(result);
       })
       .catch((err) => {
@@ -147,6 +193,7 @@ class TaskManager {
           error: err.message,
           message: `Gagal mengunduh: ${err.message}`
         });
+        this.addLog(next.taskId, `Gagal: ${err.message}`);
         next.reject(err);
       })
       .finally(() => {
@@ -172,17 +219,82 @@ class TaskManager {
     };
   }
 
+  /**
+   * Track an active file download transfer for this task.
+   * Increments the active download counter and cancels any pending
+   * SSE-disconnect cleanup since the client is actively downloading.
+   */
+  startDownload(id) {
+    const task = this.tasks.get(id);
+    if (!task) return;
+
+    task.activeDownloads += 1;
+
+    if (task.sseDisconnectTimer) {
+      clearTimeout(task.sseDisconnectTimer);
+      task.sseDisconnectTimer = null;
+    }
+  }
+
+  /**
+   * Decrement the active download counter when a transfer ends
+   * (either via 'finish' or 'close' on the response).
+   */
+  endDownload(id) {
+    const task = this.tasks.get(id);
+    if (!task) return;
+
+    task.activeDownloads = Math.max(0, task.activeDownloads - 1);
+  }
+
   subscribe(id, res) {
     const task = this.tasks.get(id);
     if (!task) return false;
 
     task.sseClients.add(res);
 
+    // A client just connected, so cancel any pending disconnect-based cleanup
+    if (task.sseDisconnectTimer) {
+      clearTimeout(task.sseDisconnectTimer);
+      task.sseDisconnectTimer = null;
+    }
+
     // Send immediate initial state
     res.write(`data: ${JSON.stringify(this.serializeTask(task))}\n\n`);
 
     res.on('close', () => {
       task.sseClients.delete(res);
+
+      // When the last SSE client disconnects for a 'ready' task (e.g. page refresh,
+      // tab close, URL change) and no download transfer is in progress, schedule
+      // a delayed cleanup. The grace period allows the frontend to reconnect
+      // (via its auto-reconnect logic) before the file is removed.
+      if (
+        task.status === 'ready' &&
+        task.sseClients.size === 0 &&
+        task.activeDownloads === 0 &&
+        !task.isCleaned
+      ) {
+        if (task.sseDisconnectTimer) {
+          clearTimeout(task.sseDisconnectTimer);
+        }
+
+        task.sseDisconnectTimer = setTimeout(() => {
+          const currentTask = this.tasks.get(id);
+          if (
+            currentTask &&
+            !currentTask.isCleaned &&
+            currentTask.status === 'ready' &&
+            currentTask.sseClients.size === 0 &&
+            currentTask.activeDownloads === 0
+          ) {
+            currentTask.sseDisconnectTimer = null;
+            currentTask.message = 'File server otomatis dihapus karena tidak ada koneksi klien yang tersisa.';
+            this.broadcast(currentTask);
+            this.cleanTaskFile(id);
+          }
+        }, 5000);
+      }
     });
 
     return true;
@@ -217,7 +329,10 @@ class TaskManager {
       queuePosition: task.queuePosition,
       error: task.error,
       downloadedCount: task.downloadedCount,
-      isCleaned: task.isCleaned
+      isCleaned: task.isCleaned,
+      downloadedBytes: task.downloadedBytes,
+      totalBytes: task.totalBytes,
+      logs: task.logs
     };
   }
 
@@ -228,6 +343,12 @@ class TaskManager {
   markDownloaded(id) {
     const task = this.tasks.get(id);
     if (!task) return;
+
+    // Cancel any pending SSE-disconnect cleanup since a download has completed
+    if (task.sseDisconnectTimer) {
+      clearTimeout(task.sseDisconnectTimer);
+      task.sseDisconnectTimer = null;
+    }
 
     task.downloadedCount += 1;
     task.message = 'Berhasil diunduh ke perangkat klien. Menghapus file dari server...';
@@ -245,6 +366,18 @@ class TaskManager {
   cleanTaskFile(id) {
     const task = this.tasks.get(id);
     if (!task || task.isCleaned) return;
+
+    // Cancel any pending SSE-disconnect cleanup since we're cleaning now
+    if (task.sseDisconnectTimer) {
+      clearTimeout(task.sseDisconnectTimer);
+      task.sseDisconnectTimer = null;
+    }
+
+    // Cancel any pending log broadcast
+    if (task._logBroadcastTimer) {
+      clearTimeout(task._logBroadcastTimer);
+      task._logBroadcastTimer = null;
+    }
 
     try {
       if (task.taskDir && fs.existsSync(task.taskDir)) {

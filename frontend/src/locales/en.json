@@ -105,7 +105,8 @@
     "speedLabel": "Speed:",
     "speedChecking": "Checking speed...",
     "etaLabel": "Estimated Time Remaining:",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "logTitle": "Download Log"
   },
   "processingCard": {
     "title": "Processing...",
@@ -127,11 +128,20 @@
     "privacyNotice": "Privacy & Storage Protection:",
     "autoCleanSingle": "This file will be automatically deleted from the server after successful download to your device.",
     "autoCleanPlaylist": "These files will be automatically deleted from the server after successful download to your device.",
-    "files": "files"
+    "files": "files",
+    "videoPreview": "Video Preview — play before downloading",
+    "audioPreview": "Audio Preview — listen before downloading",
+    "imagePreview": "Image Preview — view before downloading",
+    "noVideoPreview": "Your browser does not support video playback.",
+    "noAudioPreview": "Your browser does not support audio playback.",
+    "deleteFromServer": "Delete File from Server Now",
+    "deleteConfirm": "Delete this file from the server? This action cannot be undone."
   },
   "cleanedBanner": {
     "title": "Download Success & Server File Deleted!",
-    "body": "The file has been successfully transferred to your device and automatically cleaned from the server to protect privacy and free up storage."
+    "body": "The file has been successfully transferred to your device and automatically cleaned from the server to protect privacy and free up storage.",
+    "manualTitle": "Server File Successfully Deleted!",
+    "manualBody": "The file has been manually deleted from the server. All data has been cleaned."
   },
   "failedBanner": {
     "title": "Failed to Process Media:",
@@ -294,6 +304,51 @@
       "2": "Submitting or processing spam, explicit material, or illegal content.",
       "3": "Carrying out attacks (e.g., mass scraping, DoS, brute force) against any platform.",
       "4": "Attempting to access another person's account without authorization."
-    }
-  }
-}
+     }
+   },
+   "faq": {
+     "pageTitle": "FAQ — Frequently Asked Questions",
+     "subtitle": "Find answers to the most commonly asked questions.",
+     "q1": {
+       "question": "Which platforms are supported?",
+       "answer": "MediaDown supports thousands of sites including YouTube, TikTok, Instagram (Reels & Stories), Twitter/X, Facebook, Threads, Reddit, SoundCloud, and many more. yt-dlp & gallery-dl handle auto-detection."
+     },
+     "q2": {
+       "question": "How do I install MediaDown?",
+       "answer": "Use Docker: run `docker compose up -d --build` in the root folder. Or run manually with `node backend/src/server.js` for backend and `npx vite` for frontend."
+     },
+     "q3": {
+       "question": "Do I need to install cookies?",
+       "answer": "Cookies are optional. If a platform (e.g., YouTube) blocks anonymous access, set your account cookies via the 'Set Anti-Bot Cookies' button in the header. We do not store credentials — all data is discarded immediately."
+     },
+     "q4": {
+       "question": "Can I choose video and audio quality separately?",
+       "answer": "Yes. In Video mode, select a video resolution (4K, 1440p, 1080p, etc.) then pair it with an audio quality (320 kbps, 128 kbps, or no audio/mute). FFmpeg muxes the streams instantly."
+     },
+     "q5": {
+       "question": "What output formats are available?",
+       "answer": "Video: MP4, WebM, MKV. Audio: MP3, M4A/AAC, OGG, WAV (lossless), FLAC (lossless). Images: JPEG, PNG, WebP, or original."
+     },
+     "q6": {
+       "question": "How does cross-device transfer via QR Code work?",
+       "answer": "Once the file is processed on the server, click 'Send / Download to Phone / Other Device'. Scan the QR Code or open the direct link on a device on the same network. Files are auto-deleted after successful download."
+     },
+     "q7": {
+       "question": "Why is the download speed slow?",
+       "answer": "Speed depends on the source server, your network bandwidth, and server load. Ensure the URL is publicly accessible and try using the yt-dlp engine for optimal speed."
+     },
+     "q8": {
+       "question": "Are files stored on the server after download?",
+       "answer": "No. Files are automatically deleted immediately after successfully transferring to your device. The sweeper also cleans up files not downloaded within 15 minutes."
+     },
+     "q9": {
+       "question": "What is Cloudflare Turnstile?",
+       "answer": "Turnstile is an anti-bot protection. It is only active in production when VITE_TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY are configured. In development mode, the CAPTCHA does not appear."
+     },
+     "q10": {
+       "question": "Can MediaDown be used on mobile phones?",
+       "answer": "Yes. The responsive interface supports phones, tablets, and desktops. On a phone, use the 'Send to Phone (QR)' feature for direct transfer from the server to your device."
+     },
+     "backToHome": "Back to Home"
+   }
+ }

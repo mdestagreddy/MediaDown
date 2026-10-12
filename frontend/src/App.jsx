@@ -6,6 +6,7 @@ import QrModal from './components/QrModal';
 import CookieModal from './components/CookieModal';
 import MainPage from './pages/MainPage';
 import TermsPage from './pages/Terms';
+import FaqPage from './pages/Faq';
 import { useTheme } from './hooks/useTheme';
 import { fetchJson } from './utils/api';
 import LocaleProvider from './contexts/LocaleProvider';
@@ -146,6 +147,7 @@ function App() {
             )}
           />
           <Route path="terms" element={<TermsPage />} />
+          <Route path="faq" element={<FaqPage />} />
         </Routes>
       </div>
 

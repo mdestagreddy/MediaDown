@@ -199,7 +199,8 @@ app.post('/api/download', async (req, res) => {
     imageFormat = 'original',
     playlistItems = [],
     playlistMode = 'all',
-    mediaEngine = 'auto', // 'auto' | 'ytdl' | 'gallery'
+    mediaEngine = 'auto',
+    totalImages = 0,
     turnstileToken
   } = req.body;
 
@@ -239,18 +240,26 @@ app.post('/api/download', async (req, res) => {
     maxConcurrent: taskManager.maxConcurrent
   });
 
-  // Route to appropriate download service based on mode and mediaEngine
+   // Route to appropriate download service based on mode and mediaEngine
   const useGalleryDl = mediaEngine === 'gallery' || (mediaEngine === 'auto' && mode === 'image');
+  const engineName = useGalleryDl ? 'gallery-dl' : 'yt-dlp';
+  taskManager.addLog(taskId, `Tugas dibuat - Mode: ${mode}, Engine: ${engineName}, Judul: ${title}`);
   const useYtDlp = mediaEngine === 'ytdl' || mediaEngine === 'auto' && mode !== 'image';
 
   const progressCallback = (prog) => {
     const queueLen = taskManager.queue.length;
+    const msg = prog.message || (queueLen > 0 ? `Sedang mengunduh... ${queueLen} dalam antrean (${prog.percent.toFixed(1)}%)` : `Sedang mengunduh... (${prog.percent.toFixed(1)}%)`);
+
+    taskManager.addLog(taskId, msg);
+
     taskManager.updateTask(taskId, {
       progress: prog.percent,
       speed: prog.speed,
       eta: prog.eta,
       status: prog.status,
-      message: prog.message || (queueLen > 0 ? `Sedang mengunduh... ${queueLen} dalam antrean (${prog.percent.toFixed(1)}%)` : `Sedang mengunduh... (${prog.percent.toFixed(1)}%)`)
+      downloadedBytes: prog.downloadedBytes || 0,
+      totalBytes: prog.totalBytes || 0,
+      message: msg
     });
   };
 
@@ -261,8 +270,12 @@ app.post('/api/download', async (req, res) => {
         outputDir: task.taskDir,
         imageFormat,
         imageQuality: typeof imageQuality === 'string' && !isNaN(imageQuality) ? parseInt(imageQuality) : imageQuality,
+        totalImages,
         onProgress: progressCallback,
-        onLog: (msg) => console.log(`[Task ${taskId}] ${msg}`)
+        onLog: (msg) => {
+          console.log(`[Task ${taskId}] ${msg}`);
+          taskManager.addLog(taskId, msg);
+        }
       });
     }
     return downloadMedia({
@@ -281,7 +294,10 @@ app.post('/api/download', async (req, res) => {
       playlistItems: playlistItems,
       playlistMode: playlistMode,
       onProgress: progressCallback,
-      onLog: (msg) => console.log(`[Task ${taskId}] ${msg}`)
+      onLog: (msg) => {
+        console.log(`[Task ${taskId}] ${msg}`);
+        taskManager.addLog(taskId, msg);
+      }
     });
   };
 
@@ -338,15 +354,33 @@ app.get('/api/download/file/:taskId', (req, res) => {
     return res.status(410).send('File ini sudah selesai diunduh dan telah otomatis dibersihkan dari server sesuai kebijakan privasi.');
   }
 
+  // Track that an active download transfer has started so the SSE
+  // disconnect-cleanup does not race with this request.
+  taskManager.startDownload(taskId);
+
   const fileName = task.fileName || 'download';
 
   // Set response headers
   res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
   res.setHeader('Content-Type', 'application/octet-stream');
+  res.setHeader('Content-Length', fs.statSync(task.filePath).size);
 
   const fileStream = fs.createReadStream(task.filePath);
 
+  let cleanupStarted = false;
+  let errored = false;
+
+  const triggerCleanup = () => {
+    if (cleanupStarted || errored) return;
+    cleanupStarted = true;
+    taskManager.endDownload(taskId);
+    console.log(`[Transfer Complete] Klien selesai mengunduh task ${taskId}. Memulai penghapusan otomatis...`);
+    taskManager.markDownloaded(taskId);
+  };
+
   fileStream.on('error', (streamErr) => {
+    errored = true;
+    taskManager.endDownload(taskId);
     console.error('[Stream Error]', streamErr.message);
     if (!res.headersSent) {
       res.status(500).send('Terjadi kesalahan saat membaca file di server.');
@@ -354,10 +388,12 @@ app.get('/api/download/file/:taskId', (req, res) => {
   });
 
   // When client successfully finishes downloading the entire file:
-  res.on('finish', () => {
-    console.log(`[Transfer Complete] Klien selesai mengunduh task ${taskId}. Memulai penghapusan otomatis...`);
-    taskManager.markDownloaded(taskId);
-  });
+  res.on('finish', triggerCleanup);
+
+  // When client disconnects before completing the transfer (refresh page,
+  // close browser/tab, change URL) the 'close' event fires and we still
+  // need to remove the file from the server.
+  res.on('close', triggerCleanup);
 
   fileStream.pipe(res);
 });
@@ -395,26 +431,104 @@ app.get('/api/download/file/:taskId/:filename', (req, res) => {
   const fileName = path.basename(filePath);
   res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
   res.setHeader('Content-Type', 'application/octet-stream');
+  res.setHeader('Content-Length', fs.statSync(filePath).size);
+
+  // Track active download transfer so SSE disconnect-cleanup does not race
+  taskManager.startDownload(taskId);
 
   const fileStream = fs.createReadStream(filePath);
 
+  let cleanupStarted = false;
+  let errored = false;
+
+  const triggerCleanup = () => {
+    if (cleanupStarted || errored) return;
+    cleanupStarted = true;
+    taskManager.endDownload(taskId);
+    console.log(`[Transfer Complete] Klien selesai mengunduh task ${taskId}. Memulai penghapusan otomatis...`);
+    taskManager.markDownloaded(taskId);
+  };
+
   fileStream.on('error', (streamErr) => {
+    errored = true;
+    taskManager.endDownload(taskId);
     console.error('[Stream Error]', streamErr.message);
     if (!res.headersSent) {
       res.status(500).send('Terjadi kesalahan saat membaca file di server.');
     }
   });
 
-  // For playlist items, don't clean the whole task yet - only clean on the main file download
+  // For playlist items, don't clean the whole task yet - only clean on the main file download.
+  // For single-file mode, clean up on both successful completion and client disconnect.
   if (task.mode !== 'playlist') {
-    res.on('finish', () => {
-      console.log(`[Transfer Complete] Klien selesai mengunduh task ${taskId}. Memulai penghapusan otomatis...`);
-      taskManager.markDownloaded(taskId);
-    });
+    // When client successfully finishes downloading the entire file:
+    res.on('finish', triggerCleanup);
+
+    // When client disconnects before completing the transfer (refresh page,
+    // close browser/tab, change URL) the 'close' event fires and we still
+    // need to remove the file from the server.
+    res.on('close', triggerCleanup);
+  } else {
+    // Playlist item download — no cleanup on finish/close; just decrement
+    // the active download counter once so SSE disconnect-cleanup can resume.
+    const endTransfer = () => {
+      if (cleanupStarted || errored) return;
+      cleanupStarted = true;
+      taskManager.endDownload(taskId);
+    };
+    res.on('finish', endTransfer);
+    res.on('close', endTransfer);
   }
 
   fileStream.pipe(res);
 });
+
+// Preview media file in-browser (inline) without triggering auto-cleanup
+const mime = require('mime-types');
+
+function servePreview(req, res, filename) {
+  const { taskId } = req.params;
+  const task = taskManager.getTask(taskId);
+
+  if (!task) {
+    return res.status(404).send('File tidak ditemukan atau telah kedaluwarsa.');
+  }
+
+  if (task.isCleaned || !task.filePath || !fs.existsSync(task.filePath)) {
+    return res.status(410).send('File ini sudah selesai diunduh dan telah otomatis dibersihkan dari server.');
+  }
+
+  let filePath;
+  if (task.mode === 'playlist' && task.playlistFiles && filename) {
+    const fileEntry = task.playlistFiles.find(f => f.name === decodeURIComponent(filename) || f.name === filename);
+    if (!fileEntry) {
+      return res.status(404).send('File tidak ditemukan dalam paket playlist.');
+    }
+    filePath = fileEntry.path;
+  } else {
+    filePath = task.filePath;
+  }
+
+  if (!filePath || !fs.existsSync(filePath)) {
+    return res.status(410).send('File ini sudah selesai diunduh dan telah otomatis dibersihkan dari server.');
+  }
+
+  const contentType = mime.lookup(path.extname(filePath)) || 'application/octet-stream';
+  res.setHeader('Content-Type', contentType);
+  res.setHeader('Content-Disposition', 'inline');
+
+  const fileStream = fs.createReadStream(filePath);
+  fileStream.on('error', (streamErr) => {
+    console.error('[Preview Stream Error]', streamErr.message);
+    if (!res.headersSent) {
+      res.status(500).send('Terjadi kesalahan saat membaca file di server.');
+    }
+  });
+  fileStream.pipe(res);
+}
+
+app.get('/api/preview/:taskId', (req, res) => servePreview(req, res, null));
+app.get('/api/preview/:taskId/:filename', (req, res) => servePreview(req, res, req.params.filename));
 
 // Generate QR Code for downloading from mobile device on the same local network
 app.get('/api/qrcode/:taskId', async (req, res) => {

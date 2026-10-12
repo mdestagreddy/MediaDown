@@ -2,8 +2,9 @@ import { ShieldCheck } from 'lucide-react';
 import './ReadyBox.css';
 import useLocale from '../hooks/useLocale';
 
-const CleanedBanner = () => {
+const CleanedBanner = ({ task }) => {
   const { t } = useLocale();
+  const isManualDelete = !task?.downloadedCount || task?.downloadedCount === 0;
 
   return (
     <div className="ready-box cleaned-box">
@@ -12,9 +13,11 @@ const CleanedBanner = () => {
           <ShieldCheck size={28} />
         </div>
         <div className="ready-text-wrap">
-          <div className="ready-title">{t('cleanedBanner.title')}</div>
+          <div className="ready-title">
+            {isManualDelete ? t('cleanedBanner.manualTitle') : t('cleanedBanner.title')}
+          </div>
           <div className="t-base c-muted mt-4">
-            {t('cleanedBanner.body')}
+            {isManualDelete ? t('cleanedBanner.manualBody') : t('cleanedBanner.body')}
           </div>
         </div>
       </div>

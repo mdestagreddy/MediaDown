@@ -1,9 +1,15 @@
 import { Sliders } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import './ProgressCard.css';
 import useLocale from '../hooks/useLocale';
 
 const ProcessingCard = ({ task }) => {
   const { t } = useLocale();
+  const logEndRef = useRef(null);
+
+  useEffect(() => {
+    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [task?.logs]);
 
   return (
     <div className="progress-card">
@@ -20,6 +26,23 @@ const ProcessingCard = ({ task }) => {
       <p className="t-base c-muted">
         {t('processingCard.processing')}
       </p>
+
+      {task.logs && task.logs.length > 0 && (
+        <div className="progress-terminal">
+          <div className="terminal-header">
+            <Sliders size={14} />
+            <span>{t('progressCard.logTitle')}</span>
+          </div>
+          <div className="terminal-body">
+            {task.logs.map((log, i) => (
+              <div key={i} className="terminal-line">
+                {log}
+              </div>
+            ))}
+            <div ref={logEndRef} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

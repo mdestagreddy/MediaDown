@@ -111,6 +111,7 @@ async function downloadImages({
   outputDir,
   imageFormat = 'original',
   imageQuality = 'best',
+  totalImages = 0,
   onProgress,
   onLog
 }) {
@@ -164,12 +165,18 @@ async function downloadImages({
       }
 
       if (onProgress) {
+        const pct = totalImages > 0 ? Math.min((filesDownloaded / totalImages) * 100, 99) : 0;
+        const countMsg = totalImages > 0
+          ? `Mengunduh gambar... (${filesDownloaded}/${totalImages})`
+          : `Mengunduh gambar... (${filesDownloaded} selesai)`;
         onProgress({
-          percent: 0,
+          percent: pct,
           speed: '',
           eta: '',
           status: 'downloading',
-          message: `Mengunduh gambar... (${filesDownloaded} selesai)`
+          downloadedBytes: 0,
+          totalBytes: 0,
+          message: countMsg
         });
       }
     });

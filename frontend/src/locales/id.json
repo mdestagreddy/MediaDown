@@ -105,7 +105,8 @@
     "speedLabel": "Kecepatan:",
     "speedChecking": "Memeriksa kecepatan...",
     "etaLabel": "Estimasi Sisa Waktu:",
-    "unknown": "Tidak diketahui"
+    "unknown": "Tidak diketahui",
+    "logTitle": "Log Unduhan"
   },
   "processingCard": {
     "title": "Memproses...",
@@ -125,13 +126,22 @@
     "individualFiles": "Unduh file individu:",
     "moreFiles": "+{{count}} file lainnya tersedia",
     "privacyNotice": "Perlindungan Privasi & Storage:",
-    "autoCleanSingle": "File ini akan otomatis dihapus dari server segera setelah berhasil diunduh ke perangkat Anda.",
+     "autoCleanSingle": "File ini akan otomatis dihapus dari server segera setelah berhasil diunduh ke perangkat Anda.",
     "autoCleanPlaylist": "File-file ini akan otomatis dihapus dari server segera setelah berhasil diunduh ke perangkat Anda.",
-    "files": "file"
+    "files": "file",
+    "videoPreview": "Pratinjau Video — putar sebelum mengunduh",
+    "audioPreview": "Pratinjau Audio — dengar sebelum mengunduh",
+    "imagePreview": "Pratinjau Gambar — lihat sebelum mengunduh",
+    "noVideoPreview": "Browser Anda tidak mendukung pemutaran video.",
+    "noAudioPreview": "Browser Anda tidak mendukung pemutaran audio.",
+    "deleteFromServer": "Hapus File dari Server Sekarang",
+    "deleteConfirm": "Hapus file ini dari server? Tindakan ini tidak dapat dibatalkan."
   },
   "cleanedBanner": {
     "title": "Pengunduhan Sukses & File Server Dihapus!",
-    "body": "File telah berhasil ditransfer ke perangkat Anda dan otomatis dibersihkan dari server untuk menjaga privasi dan mengosongkan penyimpanan."
+    "body": "File telah berhasil ditransfer ke perangkat Anda dan otomatis dibersihkan dari server untuk menjaga privasi dan mengosongkan penyimpanan.",
+    "manualTitle": "File Server Berhasil Dihapus!",
+    "manualBody": "File telah dihapus dari server secara manual. Semua data telah dibersihkan."
   },
   "failedBanner": {
     "title": "Gagal Memproses Media:",
@@ -319,6 +329,51 @@
       "2": "Mengirimkan atau memproses spam, materi eksplisit, atau konten ilegal.",
       "3": "Melakukan serangan (mis. scraping massal, DoS, brute force) terhadap platform manapun.",
       "4": "Mencoba mengakses akun orang lain tanpa otorisasi."
-    }
-  }
-}
+     }
+   },
+   "faq": {
+     "pageTitle": "FAQ — Pertanyaan Umum",
+     "subtitle": "Temukan jawaban untuk pertanyaan yang paling sering ditanyakan.",
+     "q1": {
+       "question": "Platform mana yang didukung?",
+       "answer": "MediaDown mendukung ribuan situs termasuk YouTube, TikTok, Instagram (Reels & Stories), Twitter/X, Facebook, Threads, Reddit, SoundCloud, dan banyak lagi. yt-dlp & gallery-dl menangani deteksi otomatis."
+     },
+     "q2": {
+       "question": "Bagaimana cara menginstalasikan MediaDown?",
+       "answer": "Gunakan Docker: jalankan `docker compose up -d --build` di folder root. Atau jalankan manual dengan `node backend/src/server.js` untuk backend dan `npx vite` untuk frontend."
+     },
+     "q3": {
+       "question": "Apakah saya perlu memasang cookies?",
+       "answer": "Cookies bersifat opsional. Jika platform (seperti YouTube) memblokir akses anonim, pasang cookies akun Anda via tombol 'Atur Cookies' di header. Kami tidak menyimpan kredensial — semua data dibuang segeri."
+     },
+     "q4": {
+       "question": "Bisakah saya memilih kualitas video dan audio secara terpisah?",
+       "answer": "Ya. Di mode Video, pilih resolusi video (4K, 1440p, 1080p, dll.) lalu pasangkan dengan kualitas audio (320 kbps, 128 kbps, atau tanpa suara/mute). FFmpeg menggabungkan stream secara instan."
+     },
+     "q5": {
+       "question": "Format output apa yang tersedia?",
+       "answer": "Video: MP4, WebM, MKV. Audio: MP3, M4A/AAC, OGG, WAV (lossless), FLAC (lossless). Gambar: JPEG, PNG, WebP, atau asli."
+     },
+     "q6": {
+       "question": "Bagaimana transfer ke ponsel via QR Code bekerja?",
+       "answer": "Setelah file selesai diproses di server, klik 'Kirim ke HP / Perangkat Lain'. Scan QR Code atau buka link langsung di perangkat yang sama jaringannya. File otomatis terhapus setelah berhasil diunduh."
+     },
+     "q7": {
+       "question": "Mengapa kecepatan unduh lambat?",
+       "answer": "Kecepatan bergantung pada server sumber, kuota jaringan Anda, dan beban server. Pastikan URL dapat diakses publik dan coba gunakan engine yt-dlp untuk kecepatan optimal."
+     },
+     "q8": {
+       "question": "Apakah file tersimpan di server setelah selesai?",
+       "answer": "Tidak. File dihapus otomatis segera setelah berhasil diunduh ke perangkat Anda. Sweeper juga membersihkan file yang tidak diunduh selama 15 menit."
+     },
+     "q9": {
+       "question": "Apa itu Cloudflare Turnstile?",
+       "answer": "Turnstile adalah proteksi anti-bot. Hanya aktif di production ketika VITE_TURNSTILE_SITE_KEY dan TURNSTILE_SECRET_KEY dikonfigurasi. Di mode development, captcha tidak muncul."
+     },
+     "q10": {
+       "question": "Apakah MediaDown bisa dipakai di ponsel?",
+       "answer": "Ya. Antarmuka responsif mendukung HP, tablet, dan desktop. Di ponsel, gunakan fitur 'Kirim ke HP (QR)' untuk transfer langsung dari server ke perangkat Anda."
+     },
+     "backToHome": "Kembali ke Beranda"
+   }
+ }

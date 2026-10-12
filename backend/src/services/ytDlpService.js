@@ -423,7 +423,7 @@ function downloadMedia({
               onProgress({
                 percent: Math.min(pct, 99),
                 speed: speed && speed !== 'NA' ? speed : '',
-                eta: eta && eta !== 'NA' ? eta : '',
+                eta: parseEtaStr(eta),
                 downloadedBytes,
                 totalBytes,
                 status: 'downloading'
@@ -440,6 +440,8 @@ function downloadMedia({
                 speed: '',
                 eta: '',
                 status: 'processing',
+                downloadedBytes: 0,
+                totalBytes: 0,
                 message: 'Menggabungkan dan mengonversi format dengan FFmpeg...'
               });
             }
@@ -547,6 +549,17 @@ function downloadMedia({
 }
 
 // Helpers
+function parseEtaStr(etaStr) {
+  if (!etaStr || etaStr === 'NA' || etaStr === '') return '';
+  const parts = etaStr.split(':').map(Number);
+  if (parts.length === 3) {
+    return { hours: parts[0], minutes: parts[1], seconds: parts[2] };
+  } else if (parts.length === 2) {
+    return { hours: 0, minutes: parts[0], seconds: parts[1] };
+  }
+  return '';
+}
+
 function formatBytes(bytes) {
   if (!bytes || isNaN(bytes)) return null;
   const k = 1024;

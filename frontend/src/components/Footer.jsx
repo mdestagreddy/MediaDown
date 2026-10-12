@@ -33,6 +33,11 @@ const Footer = () => {
             : <Link to="/terms" className="footer-link">{t('terms.pageTitle')}</Link>
           }
           <span className="footer-divider c-dim">·</span>
+          {location.pathname === '/faq'
+            ? <Link to="/" className="footer-link">{t('footer.home')}</Link>
+            : <Link to="/faq" className="footer-link">{t('faq.pageTitle')}</Link>
+          }
+          <span className="footer-divider c-dim">·</span>
           <a
             href={GITHUB_URL}
             target="_blank"

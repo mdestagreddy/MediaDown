@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Turnstile } from '@marsidev/react-turnstile';
 import '../components/shared.css';
 
@@ -258,6 +258,7 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
         imageQuality: imageSettings.imageQuality,
         imageFormat: imageSettings.imageFormat,
         mediaEngine,
+        totalImages: mode === 'image' ? (mediaInfo.images?.length || 0) : 0,
         turnstileToken
       };
 
@@ -353,7 +354,7 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
     }
   };
 
-  const listenToTask = (taskId) => {
+  const listenToTask = (taskId, attempt = 1) => {
     if (sseRef.current) {
       sseRef.current.close();
     }
@@ -361,7 +362,14 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
     const sse = new EventSource(`/api/tasks/${taskId}/events`);
     sseRef.current = sse;
 
+    let isSubscribed = true;
+
+    sse.onopen = () => {
+      // Reset reconnect attempts on (re)connect
+    };
+
     sse.onmessage = (event) => {
+      if (!isSubscribed) return;
       try {
         const taskData = JSON.parse(event.data);
         setActiveTask(taskData);
@@ -375,9 +383,40 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
     };
 
     sse.onerror = () => {
-      // Auto fallback / close on terminate
+      isSubscribed = false;
+      // Auto-reconnect with backoff to recover from transient drops (e.g. tab hidden/backgrounded).
+      if (attempt < 5) {
+        const delay = Math.min(1000 * 2 ** (attempt - 1), 15000);
+        setTimeout(() => listenToTask(taskId, attempt + 1), delay);
+      }
     };
   };
+
+  // Polling fallback: keep task status in sync when SSE drops, so the UI does
+  // not keep showing "will be auto-deleted" while the server file is already gone.
+  useEffect(() => {
+    const tid = activeTask?.id;
+    const st = activeTask?.status;
+    if (!tid || st === 'cleaned' || st === 'failed' || st === undefined) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const json = await fetchJson(`/api/tasks/${tid}`);
+        if (json?.success && json.task) {
+          setActiveTask((prev) => ({
+            ...prev,
+            ...json.task,
+            isCleaned: json.task.isCleaned,
+            status: json.task.status
+          }));
+        }
+      } catch (err) {
+        console.warn('Task status pool gagal:', err.message);
+      }
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [activeTask?.id, activeTask?.status]);
 
   const loadQrCode = async (taskId) => {
     try {
@@ -400,6 +439,31 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  };
+
+  const handleDeleteFromServer = async () => {
+    if (!activeTask || !activeTask.id) return;
+    if (!confirm(t('readyBox.deleteConfirm'))) return;
+
+    if (sseRef.current) sseRef.current.close();
+
+    // Optimistic: immediately transition to cleaned state so ReadyBox disappears
+    // even if the subsequent API request / SSE broadcast lags or never arrives.
+    setActiveTask((prev) => ({
+      ...prev,
+      status: 'cleaned',
+      isCleaned: true,
+      filePath: null
+    }));
+
+    try {
+      const json = await fetchJson(`/api/tasks/${activeTask.id}`, { method: 'DELETE' });
+      if (!json.success) {
+        console.error('Delete from server gagal:', json.error);
+      }
+    } catch (err) {
+      console.error('Delete from server error:', err.message);
+    }
   };
 
   return (
@@ -468,12 +532,13 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
           task={activeTask}
           onClientDownload={handleClientDownload}
           onOpenQrModal={openQrModal}
+          onDeleteFromServer={handleDeleteFromServer}
         />
       )}
 
       {/* Cleaned Banner */}
       {activeTask && (activeTask.status === 'cleaned' || activeTask.isCleaned) && (
-        <CleanedBanner />
+        <CleanedBanner task={activeTask} />
       )}
 
       {/* Failed Banner */}
