@@ -31,7 +31,7 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
     selectedVideoFormat: '',
     selectedAudioFormat: 'best',
     videoContainer: 'mp4',
-    videoQualityPreset: 'standard'
+    videoQualityPreset: '720p'
   });
 
   const [audioSettings, setAudioSettings] = useState({

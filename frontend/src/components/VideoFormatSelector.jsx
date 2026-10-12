@@ -16,13 +16,29 @@ const VideoFormatSelector = ({
   const { t } = useLocale();
 
   const qualityPresets = [
-    { value: 'low', label: t('videoFormat.presetLow'), res: '360p-480p / SD', desc: t('videoFormat.presetLowDesc') },
-    { value: 'standard', label: t('videoFormat.presetStandard'), res: '720p / HD', desc: t('videoFormat.presetStandardDesc') },
-    { value: 'high', label: t('videoFormat.presetHigh'), res: '1080p / Full HD', desc: t('videoFormat.presetHighDesc') },
-    { value: 'ultra', label: t('videoFormat.presetUltra'), res: '4K / UHD', desc: t('videoFormat.presetUltraDesc') }
+    { value: '144p', label: t('videoFormat.preset144p'), res: '144p', desc: t('videoFormat.preset144pDesc'), minHeight: 144 },
+    { value: '240p', label: t('videoFormat.preset240p'), res: '240p', desc: t('videoFormat.preset240pDesc'), minHeight: 240 },
+    { value: '360p', label: t('videoFormat.preset360p'), res: '360p', desc: t('videoFormat.preset360pDesc'), minHeight: 360 },
+    { value: '480p', label: t('videoFormat.preset480p'), res: '480p / SD', desc: t('videoFormat.preset480pDesc'), minHeight: 480 },
+    { value: '720p', label: t('videoFormat.preset720p'), res: '720p / HD', desc: t('videoFormat.preset720pDesc'), minHeight: 720 },
+    { value: '1080p', label: t('videoFormat.preset1080p'), res: '1080p / Full HD', desc: t('videoFormat.preset1080pDesc'), minHeight: 1080 },
+    { value: '1440p', label: t('videoFormat.preset1440p'), res: '1440p / 2K QHD', desc: t('videoFormat.preset1440pDesc'), minHeight: 1440 },
+    { value: '2160p', label: t('videoFormat.preset2160p'), res: '2160p / 4K UHD', desc: t('videoFormat.preset2160pDesc'), minHeight: 2160 }
   ];
 
+  const maxAvailableHeight = mediaInfo?.allVideoFormats?.reduce((max, vf) => {
+    const h = vf.height || 0;
+    return h > max ? h : max;
+  }, 0) || mediaInfo?.videoFormats?.[0]?.height || 0;
+
+  const availablePresets = qualityPresets.filter(p => maxAvailableHeight >= p.minHeight);
+
   const isCustom = videoQualityPreset === 'custom';
+
+  if (!isCustom && availablePresets.length > 0 && !availablePresets.some(p => p.value === videoQualityPreset)) {
+    const fallback = availablePresets[availablePresets.length - 1];
+    onVideoQualityPresetChange(fallback.value);
+  }
 
   return (
     <div className="fl-col gap-20">
@@ -34,7 +50,7 @@ const VideoFormatSelector = ({
         </div>
 
         <div className="preset-grid">
-          {qualityPresets.map((preset) => (
+          {availablePresets.map((preset) => (
             <div
               key={preset.value}
               className={`preset-card ${videoQualityPreset === preset.value ? 'selected' : ''}`}

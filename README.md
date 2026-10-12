@@ -17,9 +17,11 @@ Dirancang khusus untuk melampaui website downloader pihak ketiga yang sering rus
    - Mengambil stream asli langsung dari sumber tanpa batas kecepatan buatan.
 
 2. **Kualitas Video & Audio Terpisah (Custom Combinations)**:
-   - Tidak lagi dipaksa menggunakan video yang sudah digabung atau kualitas audio rendah dari server sosmed.
-    - Anda bebas memilih resolusi video tertinggi (4K, 1440p, 1080p 60fps, 720p, dll.) dan memasangkannya dengan stream audio pilihan (Best Audio, 320 kbps, 128 kbps, atau video tanpa suara/mute).
-    - **Auto-Detect Audio-Only**: Jika konten tidak memiliki stream video (mis. SoundCloud), tab "Video + Audio" otomatis disembunyikan dan aplikasi langsung beralih ke tab "Audio" untuk ekstraksi langsung.
+    - Tidak lagi dipaksa menggunakan video yang sudah digabung atau kualitas audio rendah dari server sosmed.
+     - Anda bebas memilih resolusi video tertinggi (4K, 1440p, 1080p 60fps, 720p, dll.) dan memasangkannya dengan stream audio pilihan (Best Audio, 320 kbps, 128 kbps, atau video tanpa suara/mute).
+     - **Preset Kualitas Video untuk Pemula (MP4)**: Pemilih resolusi cepat dengan 8 preset bertahap — `144p`, `240p`, `360p`, `480p (SD)`, `720p (HD)`, `1080p (Full HD)`, `1440p (2K QHD)`, dan `2160p (4K UHD)`. Setiap preset otomatis menggunakan kodek selektor tinggi (`bestvideo[height<=N]`) dan **mengunci kontainer MP4** yang kompatibel semua perangkat. Preset yang melebihi resolusi maksimum video sumber otomatis disembunyikan.
+     - **Opsi Kustom**: Pilih format video spesifik dari daftar lengkap + audio bebas + kontainer WebM/MKV untuk kontrol penuh.
+     - **Auto-Detect Audio-Only**: Jika konten tidak memiliki stream video (mis. SoundCloud), tab "Video + Audio" otomatis disembunyikan dan aplikasi langsung beralih ke tab "Audio" untuk ekstraksi langsung.
 
 3. **Konversi Format & Pengaturan Kualitas Audio Akurat**:
     - **Video**: `MP4`, `WebM`, `MKV`.
@@ -92,6 +94,11 @@ Dirancang khusus untuk melampaui website downloader pihak ketiga yang sering rus
 
 17. **FAQ Page**:
     - Halaman `/faq` dengan 10 pertanyaan umum (multi-bahasa).
+
+18. **Video Quality Presets API**:
+    - `POST /api/download` menerima parameter `videoQualityPreset` (`144p`, `240p`, `360p`, `480p`, `720p`, `1080p`, `1440p`, `2160p`, `custom`).
+    - Preset otomatis memilih format video dengan batasan resolusi maksimum via `bestvideo[height<=N]` dan menggabungkan dengan audio terbaik, lalu meremix ke kontainer **MP4**.
+    - Opsi `custom` menggunakan ID format spesifik yang dipilih pengguna dan respek `videoContainer` (`mp4`, `webm`, `mkv`).
 
 ---
 
@@ -238,7 +245,7 @@ MediaDown/
 │   │   │   ├── MediaBox.jsx           # Kartu inspeksi media (tabs + selector)
 │   │   │   ├── MediaPreview.jsx       # Thumbnail & metadata media
 │   │   │   ├── ModeTabs.jsx           # Tab mode Video / Audio / Gambar / Playlist
-│   │   │   ├── VideoFormatSelector.jsx# Selector resolusi, audio & kontainer video
+│   │   │   ├── VideoFormatSelector.jsx# Selector preset kualitas video + format & kontainer (144p–4K + Custom)
 │   │   │   ├── AudioFormatSelector.jsx# Selector format, bitrate/sample rate & bit depth
 │   │   │   ├── DownloadActionCard.jsx # Tombol mulai unduhan
 │   │   │   ├── ProgressCard.jsx       # Progress unduhan real-time + log terminal via SSE

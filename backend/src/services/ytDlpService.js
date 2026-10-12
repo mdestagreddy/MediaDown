@@ -314,7 +314,7 @@ function downloadMedia({
   videoFormatId,
   audioFormatId,
   videoContainer = 'mp4',
-  videoQualityPreset, // 'low' | 'standard' | 'high' | 'ultra' | 'custom'
+  videoQualityPreset, // '144p' | '240p' | '360p' | '480p' | '720p' | '1080p' | '1440p' | '2160p' | 'custom'
   audioFormat = 'mp3',
   audioQuality = '320k',
   sampleRate = 'auto',
@@ -497,10 +497,14 @@ function downloadMedia({
 
       if (usePreset) {
         const presetHeight = {
-          low: 480,
-          standard: 720,
-          high: 1080,
-          ultra: 2160
+          '144p': 144,
+          '240p': 240,
+          '360p': 360,
+          '480p': 480,
+          '720p': 720,
+          '1080p': 1080,
+          '1440p': 1440,
+          '2160p': 2160
         }[videoQualityPreset];
         vFormat = `bestvideo[height<=${presetHeight}]`;
       } else {
