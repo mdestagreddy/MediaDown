@@ -22,11 +22,11 @@ function formatEta(eta) {
 
 const ProgressCard = ({ task }) => {
   const { t } = useLocale();
-  const logEndRef = useRef(null);
+  const terminalBodyRef = useRef(null);
   const showBytes = task.totalBytes > 0;
 
   useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    terminalBodyRef.current.scrollTop = terminalBodyRef.current.scrollHeight;
   }, [task.logs]);
 
   return (
@@ -71,13 +71,12 @@ const ProgressCard = ({ task }) => {
             <Terminal size={14} />
             <span>{t('progressCard.logTitle')}</span>
           </div>
-          <div className="terminal-body">
+          <div className="terminal-body" ref={terminalBodyRef}>
             {task.logs.map((log, i) => (
               <div key={i} className="terminal-line">
                 {log}
               </div>
             ))}
-            <div ref={logEndRef} />
           </div>
         </div>
       )}
