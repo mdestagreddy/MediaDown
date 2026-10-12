@@ -11,6 +11,7 @@ const MediaBox = ({
   mediaInfo,
   mode,
   onModeChange,
+  isAudioOnly,
   onStartDownload,
   isStartingDownload,
   videoSettings,
@@ -28,8 +29,8 @@ const MediaBox = ({
     {/* Preview details */}
     <MediaPreview mediaInfo={mediaInfo} />
 
-    {/* Mode Tabs */}
-    <ModeTabs mode={mode} onChange={onModeChange} />
+    {/* Mode Tabs - hide Video tab when content is audio-only */}
+    <ModeTabs mode={mode} onChange={onModeChange} hideVideoTab={isAudioOnly} />
 
     {/* Video Mode Content */}
     {mode === 'video' && (

@@ -18,13 +18,16 @@ Dirancang khusus untuk melampaui website downloader pihak ketiga yang sering rus
 
 2. **Kualitas Video & Audio Terpisah (Custom Combinations)**:
    - Tidak lagi dipaksa menggunakan video yang sudah digabung atau kualitas audio rendah dari server sosmed.
-   - Anda bebas memilih resolusi video tertinggi (4K, 1440p, 1080p 60fps, 720p, dll.) dan memasangkannya dengan stream audio pilihan (Best Audio, 320 kbps, 128 kbps, atau video tanpa suara/mute).
+    - Anda bebas memilih resolusi video tertinggi (4K, 1440p, 1080p 60fps, 720p, dll.) dan memasangkannya dengan stream audio pilihan (Best Audio, 320 kbps, 128 kbps, atau video tanpa suara/mute).
+    - **Auto-Detect Audio-Only**: Jika konten tidak memiliki stream video (mis. SoundCloud), tab "Video + Audio" otomatis disembunyikan dan aplikasi langsung beralih ke tab "Audio" untuk ekstraksi langsung.
 
 3. **Konversi Format & Pengaturan Kualitas Audio Akurat**:
-   - **Video**: `MP4`, `WebM`, `MKV`.
-   - **Format Lossy (`MP3`, `M4A`, `OGG`)**:
-     - Kualitas diatur spesifik berdasarkan **Bitrate**: `320 kbps` (Hi-Fi Master), `256 kbps`, `192 kbps`, `128 kbps`, `96 kbps`, `64 kbps`, atau Bitrate Asli Sumber.
-   - **Format Lossless (`WAV`, `FLAC`)**:
+    - **Video**: `MP4`, `WebM`, `MKV`.
+    - **Format Lossy (`MP3`, `M4A`, `OGG Vorbis`, `Opus`)**:
+      - Kualitas diatur spesifik berdasarkan **Bitrate**: `320 kbps` (Hi-Fi Master), `256 kbps`, `192 kbps`, `128 kbps`, `96 kbps`, `64 kbps`, atau **Original Source Quality** (mempertahankan kodek asli).
+      - **Opus** mendukung bitrate ekstra rendah untuk hemat kuota: `550 kbps` (Hi-Fi), `320 kbps`, `256 kbps`, `192 kbps`, `128 kbps`, `96 kbps`, `64 kbps`, `48 kbps`, `32 kbps` (VoIP), `24 kbps` (Low Bandwidth).
+      - **Original**: Mempertahankan format dan kodek audio sumber asli tanpa re-encoding, cocok untuk platform audio-only seperti SoundCloud.
+    - **Format Lossless (`WAV`, `FLAC`)**:
      - Tidak menggunakan kompresi bitrate lossy, melainkan diatur langsung berdasarkan standar audio profesional:
        - **Sample Rate**: `Asli Sumber`, `44.1 kHz` (CD Audio), `48.0 kHz` (Studio/Video), `88.2 kHz`, `96.0 kHz` (Hi-Res Studio Master), `192.0 kHz` (Audiophile).
        - **Bit Depth**: `Asli Sumber`, `16-bit` (Standar CD), `24-bit` (Studio Master Hi-Res), `32-bit Float` (Pro DAW).

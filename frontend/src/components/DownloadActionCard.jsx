@@ -7,6 +7,7 @@ const AUDIO_FORMAT_DISPLAY = {
   m4a: 'M4A',
   vorbis: 'OGG',
   opus: 'OPUS',
+  original: 'ORIGINAL',
   wav: 'WAV',
   flac: 'FLAC',
 };

@@ -35,7 +35,7 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
 
   const [audioSettings, setAudioSettings] = useState({
     audioTargetFormat: 'mp3',
-    audioBitrate: '320k',
+    audioBitrate: 'original',
     sampleRate: 'auto',
     bitDepth: 'auto'
   });
@@ -47,6 +47,9 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
 
   const [playlistItems, setPlaylistItems] = useState([]);
   const [selectedPlaylistItems, setSelectedPlaylistItems] = useState([]);
+
+  // Track if media is audio-only (no video streams available)
+  const [isAudioOnly, setIsAudioOnly] = useState(false);
 
   const [activeTask, setActiveTask] = useState(null);
   const [isStartingDownload, setIsStartingDownload] = useState(false);
@@ -202,12 +205,20 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
             setPlaylistItems([]);
             setSelectedPlaylistItems([]);
 
-            if (infoResult.videoFormats && infoResult.videoFormats.length > 0) {
-              updateVideoSetting('selectedVideoFormat', infoResult.videoFormats[0].format_id);
+            const audioOnly = !infoResult.videoFormats || infoResult.videoFormats.length === 0;
+            setIsAudioOnly(audioOnly);
+
+            if (audioOnly) {
+              // Auto-switch to Audio tab for audio-only content
+              setMode('audio');
             } else {
-              updateVideoSetting('selectedVideoFormat', 'bestvideo');
+              if (infoResult.videoFormats && infoResult.videoFormats.length > 0) {
+                updateVideoSetting('selectedVideoFormat', infoResult.videoFormats[0].format_id);
+              } else {
+                updateVideoSetting('selectedVideoFormat', 'bestvideo');
+              }
+              updateVideoSetting('selectedAudioFormat', 'best');
             }
-            updateVideoSetting('selectedAudioFormat', 'best');
           }
         } else if (!imageInfoResult) {
           throw new Error(t('main.analyzeError'));
@@ -501,6 +512,7 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
           mediaInfo={mediaInfo}
           mode={mode}
           onModeChange={setMode}
+          isAudioOnly={isAudioOnly}
           onStartDownload={handleStartDownload}
           isStartingDownload={isStartingDownload}
           videoSettings={videoSettings}

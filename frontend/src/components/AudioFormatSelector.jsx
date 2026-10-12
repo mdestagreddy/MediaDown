@@ -14,6 +14,7 @@ const AudioFormatSelector = ({
 }) => {
   const { t } = useLocale();
   const isLossless = audioTargetFormat === 'wav' || audioTargetFormat === 'flac';
+  const isOriginal = audioTargetFormat === 'original';
 
   return (
     <div className="fl-col gap-20">
@@ -29,10 +30,12 @@ const AudioFormatSelector = ({
             value={audioTargetFormat}
             onChange={(e) => onAudioTargetFormat(e.target.value)}
           >
+            <option value="original">{t('audioFormat.originalDesc')}</option>
             <optgroup label={t('audioFormat.lossyGroup')}>
               <option value="mp3">{t('audioFormat.mp3Desc')}</option>
               <option value="m4a">{t('audioFormat.m4aDesc')}</option>
               <option value="vorbis">{t('audioFormat.oggDesc')}</option>
+              <option value="opus">{t('audioFormat.opusDesc')}</option>
             </optgroup>
             <optgroup label={t('audioFormat.losslessGroup')}>
               <option value="wav">{t('audioFormat.wavDesc')}</option>
@@ -42,7 +45,28 @@ const AudioFormatSelector = ({
         </div>
 
         {/* If Lossy: Bitrate Selector, If Lossless: Sample Rate */}
-        {!isLossless ? (
+        {isOriginal ? (
+          <div className="selector-group">
+            <div className="group-label">
+              <Sliders size={15} />
+              <span>{t('audioFormat.label2Original')}</span>
+            </div>
+            <select
+              className="select-control"
+              value={audioBitrate}
+              onChange={(e) => onAudioBitrate(e.target.value)}
+            >
+              <option value="original">{t('audioFormat.bitrateOriginalSource')}</option>
+              <option value="550k">{t('audioFormat.opusBitrate550')}</option>
+              <option value="320k">{t('audioFormat.bitrate320')}</option>
+              <option value="256k">{t('audioFormat.bitrate256')}</option>
+              <option value="192k">{t('audioFormat.bitrate192')}</option>
+              <option value="128k">{t('audioFormat.bitrate128')}</option>
+              <option value="96k">{t('audioFormat.bitrate96')}</option>
+              <option value="64k">{t('audioFormat.bitrate64')}</option>
+            </select>
+          </div>
+        ) : !isLossless ? (
           <div className="selector-group">
             <div className="group-label">
               <Sliders size={15} />
@@ -53,13 +77,31 @@ const AudioFormatSelector = ({
               value={audioBitrate}
               onChange={(e) => onAudioBitrate(e.target.value)}
             >
-              <option value="320k">{t('audioFormat.bitrate320')}</option>
-              <option value="256k">{t('audioFormat.bitrate256')}</option>
-              <option value="192k">{t('audioFormat.bitrate192')}</option>
-              <option value="128k">{t('audioFormat.bitrate128')}</option>
-              <option value="96k">{t('audioFormat.bitrate96')}</option>
-              <option value="64k">{t('audioFormat.bitrate64')}</option>
-              <option value="best">{t('audioFormat.bitrateOriginal')}</option>
+              {audioTargetFormat === 'opus' ? (
+                <>
+                  <option value="original">{t('audioFormat.bitrateOriginalSource')}</option>
+                  <option value="550k">{t('audioFormat.opusBitrate550')}</option>
+                  <option value="320k">{t('audioFormat.opusBitrate320')}</option>
+                  <option value="256k">{t('audioFormat.opusBitrate256')}</option>
+                  <option value="192k">{t('audioFormat.opusBitrate192')}</option>
+                  <option value="128k">{t('audioFormat.opusBitrate128')}</option>
+                  <option value="96k">{t('audioFormat.opusBitrate96')}</option>
+                  <option value="64k">{t('audioFormat.opusBitrate64')}</option>
+                  <option value="48k">{t('audioFormat.opusBitrate48')}</option>
+                  <option value="32k">{t('audioFormat.opusBitrate32')}</option>
+                  <option value="24k">{t('audioFormat.opusBitrate24')}</option>
+                </>
+              ) : (
+                <>
+                  <option value="original">{t('audioFormat.bitrateOriginalSource')}</option>
+                  <option value="320k">{t('audioFormat.bitrate320')}</option>
+                  <option value="256k">{t('audioFormat.bitrate256')}</option>
+                  <option value="192k">{t('audioFormat.bitrate192')}</option>
+                  <option value="128k">{t('audioFormat.bitrate128')}</option>
+                  <option value="96k">{t('audioFormat.bitrate96')}</option>
+                  <option value="64k">{t('audioFormat.bitrate64')}</option>
+                </>
+              )}
             </select>
           </div>
         ) : (
@@ -115,11 +157,20 @@ const AudioFormatSelector = ({
         </div>
       )}
 
-      {!isLossless && (
+      {!isLossless && !isOriginal && (
         <div className="auto-clean-notice auto-clean-indigo">
           <Sliders size={18} className="c-indigo" />
           <span>
-            Format <strong>{audioTargetFormat.toUpperCase()}</strong> adalah format <em>Lossy</em>. Kualitas audio diatur berdasarkan <strong>Bitrate ({audioBitrate === 'best' ? t('audioFormat.rateAuto') : audioBitrate})</strong>.
+            Format <strong>{audioTargetFormat.toUpperCase()}</strong> adalah format <em>Lossy</em>. Kualitas audio diatur berdasarkan <strong>Bitrate ({audioBitrate === 'original' ? t('audioFormat.rateAuto') : audioBitrate})</strong>.
+          </span>
+        </div>
+      )}
+
+      {isOriginal && (
+        <div className="auto-clean-notice auto-clean-indigo">
+          <Sliders size={18} className="c-indigo" />
+          <span>
+            Format <strong>{t('audioFormat.originalDesc')}</strong> akan mempertahankan kodek audio sumber asli. Jika bitrate "Original", file akan di-stream-copy tanpa encoding ulang.
           </span>
         </div>
       )}

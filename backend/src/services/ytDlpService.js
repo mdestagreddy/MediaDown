@@ -337,19 +337,30 @@ function downloadMedia({
           args.push('--postprocessor-args', `ConvertThumbnails:-q:v ${100 - imageQuality}`);
         }
       }
-     } else if (mode === 'audio') {
-      // Audio Extraction Mode
-      const formatSelector = audioFormatId && audioFormatId !== 'best' ? audioFormatId : 'bestaudio/best';
-      args.push('-f', formatSelector);
-      args.push('-x');
-      // Map frontend format values to yt-dlp accepted codecs
-      const YTDLP_FORMAT_MAP = { ogg: 'vorbis' };
-      const ytDlpFormat = YTDLP_FORMAT_MAP[audioFormat] || audioFormat;
-      args.push('--audio-format', ytDlpFormat);
+      } else if (mode === 'audio') {
+       // Audio Extraction Mode
+       const formatSelector = audioFormatId && audioFormatId !== 'best' ? audioFormatId : 'bestaudio/best';
+       args.push('-f', formatSelector);
 
-      const isLossless = audioFormat === 'wav' || audioFormat === 'flac';
+       const isOriginalFormat = audioFormat === 'original';
 
-      if (isLossless) {
+       // For "original" format: skip -x (extraction) if audioBitrate is also 'original'
+       // to preserve the source audio stream as-is without re-encoding
+       if (!isOriginalFormat || audioBitrate !== 'original') {
+         args.push('-x');
+       }
+
+       // Map frontend format values to yt-dlp accepted codecs
+       const YTDLP_FORMAT_MAP = { ogg: 'vorbis' };
+       const ytDlpFormat = YTDLP_FORMAT_MAP[audioFormat] || audioFormat;
+
+       const isLossless = audioFormat === 'wav' || audioFormat === 'flac';
+
+       if (!isOriginalFormat) {
+         args.push('--audio-format', ytDlpFormat);
+       }
+
+       if (isLossless) {
         // Lossless: sample rate and bit depth postprocessor arguments for FFmpeg
         const postArgs = [];
         if (sampleRate && sampleRate !== 'auto') {
@@ -377,12 +388,23 @@ function downloadMedia({
         }
       } else {
         // Lossy (mp3, m4a, vorbis, opus): bitrate/quality
-        if (audioQuality && audioQuality !== 'best') {
-          // Vorbis & Opus use VBR quality levels (0-10), not bitrate strings
-          if (ytDlpFormat === 'vorbis' || ytDlpFormat === 'opus') {
-            const vbrQuality = bitrateToVbrQuality(audioQuality);
+        // 'best' or 'original' means: use ytdlp's default highest quality (source quality)
+        if (audioQuality && audioQuality !== 'best' && audioQuality !== 'original') {
+          // Vorbis uses VBR quality levels (0-10). Opus also uses VBR quality
+          // but the scale is inverted: 0 is highest, 10 is lowest.
+          // For accurate bitrate control, we use --audio-quality with VBR levels.
+          if (ytDlpFormat === 'vorbis') {
+            const vbrQuality = bitrateToVbrQuality(audioQuality, ytDlpFormat);
             if (vbrQuality) {
               args.push('--audio-quality', vbrQuality);
+            }
+          } else if (ytDlpFormat === 'opus') {
+            // Opus VBR quality levels don't reliably map to bitrate.
+            // Use explicit bitrate via postprocessor args for accurate control.
+            // Also specify -c:a libopus to force re-encoding even if source is already Opus.
+            const kbps = parseInt(audioQuality, 10);
+            if (!isNaN(kbps)) {
+              args.push('--postprocessor-args', `ExtractAudio:-c:a libopus -b:a ${kbps}k -vbr off`);
             }
           } else {
             args.push('--audio-quality', audioQuality);
@@ -573,13 +595,54 @@ function parseEtaStr(etaStr) {
 
 /**
  * Map bitrate strings (e.g. "320k") to VBR quality levels for
- * Vorbis (−1..10) / Opus (−1..10) since yt-dlp's --audio-quality
- * expects quality not bitrate for these codecs.
+ * VBR codecs. Vorbis and Opus have different quality-to-bitrate
+ * mappings, so the codec parameter adjusts accordingly.
+ *
+ * IMPORTANT: For Opus, FFmpeg's VBR quality scale is inverted:
+ *   - Quality 0 = highest (550-650 kbps, archive/master quality)
+ *   - Quality 10 = lowest (64 kbps, narrowband/mobile)
+ *
+ * Opus VBR quality reference (0–10):
+ *   0  — 550 kbps+ (archive / sangat tinggi)
+ *   1  — 320 kbps  (streaming musik, transparent)
+ *   2  — 256 kbps  (kualitas tinggi)
+ *   3  — 192 kbps  (kualitas tinggi)
+ *   4  — 128 kbps  (streaming musik)
+ *   5  — 96 kbps   (kualitas baik)
+ *   6  — 64 kbps   (fullband standar)
+ *   7  — 48 kbps   (wideband)
+ *   8  — 32 kbps   (wideband VoIP, seperti Discord/Zoom)
+ *   9  — 24 kbps   (wideband rendah)
+ *   10 — 18 kbps   (narrowband/hemat kuota)
+ *
+ * Vorbis VBR quality reference (0–10):
+ *   10 — ~500 kbps  (tertinggi)
+ *   8  — ~256 kbps
+ *   6  — ~192 kbps
+ *   5  — ~128 kbps
+ *   3  — ~96 kbps
+ *   1  — ~64 kbps
  */
-function bitrateToVbrQuality(bitrate) {
+function bitrateToVbrQuality(bitrate, codec = 'vorbis') {
   if (!bitrate || bitrate === 'best' || bitrate === 'auto') return null;
   const kbps = parseInt(bitrate, 10);
   if (isNaN(kbps)) return null;
+
+  if (codec === 'opus') {
+    if (kbps >= 550) return '0';
+    if (kbps >= 320) return '1';
+    if (kbps >= 256) return '2';
+    if (kbps >= 192) return '3';
+    if (kbps >= 128) return '4';
+    if (kbps >= 96) return '5';
+    if (kbps >= 64) return '6';
+    if (kbps >= 48) return '7';
+    if (kbps >= 32) return '8';
+    if (kbps >= 24) return '9';
+    return '10';
+  }
+
+  // Vorbis (default)
   if (kbps >= 320) return '10';
   if (kbps >= 256) return '8';
   if (kbps >= 192) return '6';
