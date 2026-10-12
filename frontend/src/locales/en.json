@@ -187,7 +187,11 @@
     "qualityLow": "Low"
   },
   "videoFormat": {
-    "label1": "1. Select Video Resolution Quality (Available from 144p to highest)",
+    "labelPreset": "1. Select Video Quality Preset (for beginners)",
+    "label1": "Select Video Resolution (Available from 144p to highest)",
+    "labelCustom": "Custom Option",
+    "custom": "Custom",
+    "mp4Fixed": "MP4 container (auto) — all preset downloads use the MP4 container compatible with all devices.",
     "bestQuality": "Highest Resolution",
     "maxQuality": "Best Maximum Quality",
     "auto": "Auto",
@@ -198,6 +202,14 @@
     "mp4Desc": "MP4 (Most Popular & Compatible with All Devices)",
     "webmDesc": "WebM (Efficient Size & High Quality)",
     "mkvDesc": "MKV (Supports Multi-Audio & Subtitles)",
+    "presetLow": "Low Quality",
+    "presetLowDesc": "Best choice to save internet quota or if mobile storage is almost full. Best for watching on small phone screens.",
+    "presetStandard": "Standard Quality",
+    "presetStandardDesc": "Most balanced option — clear enough and quota-friendly. Looks great on phones and laptops without filling up storage quickly.",
+    "presetHigh": "High Quality",
+    "presetHighDesc": "Best standard for very clear display. Recommended for watching on TV, large laptop screens, or over Wi-Fi.",
+    "presetUltra": "Ultra High Quality",
+    "presetUltraDesc": "Sharpest detail, but file size is huge and quota-heavy. Only use this if you have a 4K TV/monitor and plenty of storage.",
     "standard": "Standard",
     "dynamic": "Dynamic"
   },

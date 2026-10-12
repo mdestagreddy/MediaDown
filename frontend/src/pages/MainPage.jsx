@@ -30,7 +30,8 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
   const [videoSettings, setVideoSettings] = useState({
     selectedVideoFormat: '',
     selectedAudioFormat: 'best',
-    videoContainer: 'mp4'
+    videoContainer: 'mp4',
+    videoQualityPreset: 'standard'
   });
 
   const [audioSettings, setAudioSettings] = useState({
@@ -264,6 +265,7 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
         videoFormatId: videoSettings.selectedVideoFormat,
         audioFormatId: videoSettings.selectedAudioFormat,
         videoContainer: videoSettings.videoContainer,
+        videoQualityPreset: videoSettings.videoQualityPreset,
         audioFormat: audioSettings.audioTargetFormat,
         audioQuality: audioSettings.audioBitrate,
         sampleRate: audioSettings.sampleRate,
@@ -328,9 +330,10 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
         url: url.trim(),
         mode: 'playlist',
         title: mediaInfo.title,
-        videoFormatId: videoSettings.selectedVideoFormat,
+         videoFormatId: videoSettings.selectedVideoFormat,
         audioFormatId: videoSettings.selectedAudioFormat,
         videoContainer: videoSettings.videoContainer,
+        videoQualityPreset: videoSettings.videoQualityPreset,
         audioFormat: audioSettings.audioTargetFormat,
         audioQuality: audioSettings.audioBitrate,
         sampleRate: audioSettings.sampleRate,

@@ -187,7 +187,11 @@
     "qualityLow": "Rendah"
   },
   "videoFormat": {
-    "label1": "1. Pilih Kualitas Resolusi Video (Tersedia dari 144p hingga tertinggi)",
+    "labelPreset": "1. Pilih Kualitas Video (untuk orang awam)",
+    "label1": "Pilih Resolusi Video (Tersedia dari 144p hingga tertinggi)",
+    "labelCustom": "Opsi Kustom",
+    "custom": "Kustom",
+    "mp4Fixed": "Kontainer MP4 (otomatis) — semua unduhan preset menggunakan wadah MP4 yang kompatibel dengan semua perangkat.",
     "bestQuality": "Resolusi Tertinggi",
     "maxQuality": "Kualitas Maksimum Terbaik",
     "auto": "Otomatis",
@@ -198,6 +202,14 @@
     "mp4Desc": "MP4 (Paling Populer & Kompatibel Semua Perangkat)",
     "webmDesc": "WebM (Ukuran Efisien & Kualitas Tinggi)",
     "mkvDesc": "MKV (Mendukung Multi-Audio & Subtitle)",
+    "presetLow": "Kualitas Rendah",
+    "presetLowDesc": "Pilihan terbaik untuk menghemat kuota internet atau jika memori penyimpanan HP hampir penuh. Cocok ditonton di layar HP kecil.",
+    "presetStandard": "Kualitas Standar",
+    "presetStandardDesc": "Opsi paling seimbang yang cukup jernih dan hemat kuota. Video terlihat bagus di HP maupun laptop tanpa membuat memori cepat penuh.",
+    "presetHigh": "Kualitas Tinggi",
+    "presetHighDesc": "Standar terbaik untuk tampilan yang sangat jernih. Sangat disarankan jika ingin ditonton di TV, laptop besar, atau jika menggunakan koneksi Wi-Fi.",
+    "presetUltra": "Kualitas Ultra Tinggi",
+    "presetUltraDesc": "Opsi dengan detail paling tajam, tetapi ukuran file sangat besar dan boros kuota. Hanya pilih ini jika memiliki TV/monitor 4K dan memori yang sangat longgar.",
     "standard": "Standard",
     "dynamic": "Dinamis"
   },

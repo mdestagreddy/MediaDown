@@ -314,6 +314,7 @@ function downloadMedia({
   videoFormatId,
   audioFormatId,
   videoContainer = 'mp4',
+  videoQualityPreset, // 'low' | 'standard' | 'high' | 'ultra' | 'custom'
   audioFormat = 'mp3',
   audioQuality = '320k',
   sampleRate = 'auto',
@@ -489,9 +490,22 @@ function downloadMedia({
           }
         }
       }
-    } else {
+     } else {
       // Video Mode
-      const vFormat = videoFormatId && videoFormatId !== 'best' ? videoFormatId : 'bestvideo';
+      let vFormat;
+      let usePreset = videoQualityPreset && videoQualityPreset !== 'custom';
+
+      if (usePreset) {
+        const presetHeight = {
+          low: 480,
+          standard: 720,
+          high: 1080,
+          ultra: 2160
+        }[videoQualityPreset];
+        vFormat = `bestvideo[height<=${presetHeight}]`;
+      } else {
+        vFormat = videoFormatId && videoFormatId !== 'best' ? videoFormatId : 'bestvideo';
+      }
       
       if (audioFormatId === 'none') {
         // Video without audio (muted)

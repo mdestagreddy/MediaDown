@@ -47,6 +47,8 @@ const MediaBox = ({
         onSelectAudioFormat={(value) => onVideoSettingChange('selectedAudioFormat', value)}
         videoContainer={videoSettings.videoContainer}
         onSelectVideoContainer={(value) => onVideoSettingChange('videoContainer', value)}
+        videoQualityPreset={videoSettings.videoQualityPreset}
+        onVideoQualityPresetChange={(value) => onVideoSettingChange('videoQualityPreset', value)}
       />
     )}
 
