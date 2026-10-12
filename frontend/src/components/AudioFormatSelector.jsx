@@ -1,4 +1,4 @@
-import { Music, Sliders, CheckCircle2 } from 'lucide-react';
+import { Music, Sliders, CheckCircle2, Info } from 'lucide-react';
 import './AudioFormatSelector.css';
 import useLocale from '../hooks/useLocale';
 
@@ -10,11 +10,14 @@ const AudioFormatSelector = ({
   sampleRate,
   onSampleRate,
   bitDepth,
-  onBitDepth
+  onBitDepth,
+  embedMetadata,
+  onEmbedMetadata
 }) => {
   const { t } = useLocale();
   const isLossless = audioTargetFormat === 'wav' || audioTargetFormat === 'flac';
   const isOriginal = audioTargetFormat === 'original';
+  const showMetadataToggle = ['mp3', 'm4a', 'flac'].includes(audioTargetFormat);
 
   return (
     <div className="fl-col gap-20">
@@ -172,6 +175,31 @@ const AudioFormatSelector = ({
           <span>
             Format <strong>{t('audioFormat.originalDesc')}</strong> akan mempertahankan kodek audio sumber asli. Jika bitrate "Original", file akan di-stream-copy tanpa encoding ulang.
           </span>
+        </div>
+      )}
+
+      {showMetadataToggle && (
+        <div className="metadata-toggle-row">
+          <label className="metadata-toggle-label">
+            <span className="group-label">
+              <CheckCircle2 size={15} />
+              <span>{t('audioFormat.metadataLabel')}</span>
+            </span>
+            <div className="toggle-switch">
+              <input
+                type="checkbox"
+                checked={embedMetadata}
+                onChange={(e) => onEmbedMetadata(e.target.checked)}
+              />
+              <span className="toggle-slider" />
+            </div>
+          </label>
+          <div className="metadata-info">
+            <Info size={13} className="c-dim" />
+            <span className="t-xs c-dim">
+              {t('audioFormat.metadataDesc')}
+            </span>
+          </div>
         </div>
       )}
     </div>

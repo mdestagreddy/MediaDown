@@ -319,6 +319,7 @@ function downloadMedia({
   audioQuality = '320k',
   sampleRate = 'auto',
   bitDepth = 'auto',
+  embedMetadata = false,
   imageQuality = 'best',
   imageFormat = 'original',
   playlistItems: selectedItems = [],
@@ -381,6 +382,15 @@ function downloadMedia({
               args.push('--audio-quality', audioQuality);
             }
           }
+        }
+
+        const _playlistMetadataFormats = ['mp3', 'm4a', 'flac'];
+        if (embedMetadata && _playlistMetadataFormats.includes(audioFormat)) {
+          if (audioFormat === 'mp3') {
+            args.push('--convert-thumbnails', 'jpg');
+          }
+          args.push('--embed-thumbnail');
+          args.push('--embed-metadata');
         }
       } else {
         // Video + Audio playlist: apply quality mapping
@@ -489,6 +499,15 @@ function downloadMedia({
             args.push('--audio-quality', audioQuality);
           }
         }
+      }
+
+      const _metadataFormats = ['mp3', 'm4a', 'flac'];
+      if (embedMetadata && _metadataFormats.includes(audioFormat)) {
+        if (audioFormat === 'mp3') {
+          args.push('--convert-thumbnails', 'jpg');
+        }
+        args.push('--embed-thumbnail');
+        args.push('--embed-metadata');
       }
      } else {
       // Video Mode

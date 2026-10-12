@@ -40,7 +40,8 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
     sampleRate: 'auto',
     bitDepth: 'auto',
     playlistDownloadMode: 'video',
-    playlistQuality: 'best'
+    playlistQuality: 'best',
+    embedMetadata: true
   });
 
   const [imageSettings, setImageSettings] = useState({
@@ -208,7 +209,8 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
             setPlaylistItems([]);
             setSelectedPlaylistItems([]);
 
-            const audioOnly = !infoResult.videoFormats || infoResult.videoFormats.length === 0;
+            const audioOnly = (!infoResult.videoFormats || infoResult.videoFormats.length === 0) &&
+                  (!infoResult.allVideoFormats || infoResult.allVideoFormats.length === 0);
             setIsAudioOnly(audioOnly);
 
             if (audioOnly) {
@@ -228,8 +230,8 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
         }
       }
 
-      if (mode === 'video' && mediaInfo?.videoFormats && mediaInfo.videoFormats.length > 0) {
-        updateVideoSetting('selectedVideoFormat', mediaInfo.videoFormats[0].format_id);
+      if (mode === 'video' && mediaInfo?.allVideoFormats && mediaInfo.allVideoFormats.length > 0) {
+        updateVideoSetting('selectedVideoFormat', mediaInfo.videoFormats?.[0]?.format_id || 'bestvideo');
         updateVideoSetting('selectedAudioFormat', 'best');
       }
     } catch (err) {
@@ -270,6 +272,7 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
         audioQuality: audioSettings.audioBitrate,
         sampleRate: audioSettings.sampleRate,
         bitDepth: audioSettings.bitDepth,
+        embedMetadata: audioSettings.embedMetadata,
         imageQuality: imageSettings.imageQuality,
         imageFormat: imageSettings.imageFormat,
         mediaEngine,
@@ -335,9 +338,10 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
         videoContainer: videoSettings.videoContainer,
         videoQualityPreset: videoSettings.videoQualityPreset,
         audioFormat: audioSettings.audioTargetFormat,
-        audioQuality: audioSettings.audioBitrate,
+         audioQuality: audioSettings.audioBitrate,
         sampleRate: audioSettings.sampleRate,
         bitDepth: audioSettings.bitDepth,
+        embedMetadata: audioSettings.embedMetadata,
         imageQuality: imageSettings.imageQuality,
         imageFormat: imageSettings.imageFormat,
         playlistItems: selectedPlaylistItems,

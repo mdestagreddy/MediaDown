@@ -266,8 +266,10 @@
     "bitDepth32": "32-bit Float (Pro DAW Studio / Full Resolution)",
     "losslessNote": "Format {{format}} is a Lossless format without bitrate compression. Quality is fully controlled by Sample Rate ({{rate}}) and Bit Depth ({{depth}}).",
     "lossyNote": "Format {{format}} is a Lossy format. Audio quality is based on Bitrate ({{bitrate}}).",
-    "rateAuto": "Original",
-    "depthAuto": "Original"
+     "rateAuto": "Original",
+    "depthAuto": "Original",
+    "metadataLabel": "Include Metadata & Cover Art",
+    "metadataDesc": "Embed title, artist, and cover image into MP3, M4A, or FLAC audio files."
   },
   "imageQuality": {
     "label": "Download Image at Selected Quality",

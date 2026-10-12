@@ -2,12 +2,12 @@ import { Film, Music, Image, ListVideo } from 'lucide-react';
 import './ModeTabs.css';
 import useLocale from '../hooks/useLocale';
 
-const ModeTabs = ({ mode, onChange, hideVideoTab }) => {
+const ModeTabs = ({ mode, onChange, hideVideoTab, hideTabsExceptPlaylist }) => {
   const { t } = useLocale();
 
   return (
   <div className="tabs-nav">
-    {!hideVideoTab && (
+    {!hideVideoTab && !hideTabsExceptPlaylist && (
       <button
         type="button"
         className={`tab-btn ${mode === 'video' ? 'active' : ''}`}
@@ -17,22 +17,26 @@ const ModeTabs = ({ mode, onChange, hideVideoTab }) => {
         <span>{t('modeTabs.video')}</span>
       </button>
     )}
-    <button
-      type="button"
-      className={`tab-btn ${mode === 'audio' ? 'active' : ''}`}
-      onClick={() => onChange('audio')}
-    >
-      <Music size={18} />
-      <span>{t('modeTabs.audio')}</span>
-    </button>
-    <button
-      type="button"
-      className={`tab-btn ${mode === 'image' ? 'active' : ''}`}
-      onClick={() => onChange('image')}
-    >
-      <Image size={18} />
-      <span>{t('modeTabs.image')}</span>
-    </button>
+    {!hideTabsExceptPlaylist && (
+    <>
+      <button
+        type="button"
+        className={`tab-btn ${mode === 'audio' ? 'active' : ''}`}
+        onClick={() => onChange('audio')}
+      >
+        <Music size={18} />
+        <span>{t('modeTabs.audio')}</span>
+      </button>
+      <button
+        type="button"
+        className={`tab-btn ${mode === 'image' ? 'active' : ''}`}
+        onClick={() => onChange('image')}
+      >
+        <Image size={18} />
+        <span>{t('modeTabs.image')}</span>
+      </button>
+    </>
+    )}
     <button
       type="button"
       className={`tab-btn ${mode === 'playlist' ? 'active' : ''}`}

@@ -269,8 +269,10 @@
     "bitDepth32": "32-bit Float (Pro DAW Studio / Resolusi Penuh)",
     "losslessNote": "Format {{format}} adalah format Lossless tanpa kompresi bitrate. Kualitas diatur sepenuhnya oleh Sample Rate ({{rate}}) dan Bit Depth ({{depth}}).",
     "lossyNote": "Format {{format}} adalah format Lossy. Kualitas audio diatur berdasarkan Bitrate ({{bitrate}}).",
-    "rateAuto": "Asli",
-    "depthAuto": "Asli"
+     "rateAuto": "Asli",
+    "depthAuto": "Asli",
+    "metadataLabel": "Sertakan Metadata & Cover Art",
+    "metadataDesc": "Sematkan judul, artis, dan gambar cover ke dalam file audio MP3, M4A, atau FLAC."
   },
   "imageQuality": {
     "label": "Unduh Gambar dengan Kualitas Pilihan",

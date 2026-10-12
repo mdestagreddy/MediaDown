@@ -32,7 +32,11 @@ Dirancang khusus untuk melampaui website downloader pihak ketiga yang sering rus
     - **Format Lossless (`WAV`, `FLAC`)**:
      - Tidak menggunakan kompresi bitrate lossy, melainkan diatur langsung berdasarkan standar audio profesional:
        - **Sample Rate**: `Asli Sumber`, `44.1 kHz` (CD Audio), `48.0 kHz` (Studio/Video), `88.2 kHz`, `96.0 kHz` (Hi-Res Studio Master), `192.0 kHz` (Audiophile).
-       - **Bit Depth**: `Asli Sumber`, `16-bit` (Standar CD), `24-bit` (Studio Master Hi-Res), `32-bit Float` (Pro DAW).
+        - **Bit Depth**: `Asli Sumber`, `16-bit` (Standar CD), `24-bit` (Studio Master Hi-Res), `32-bit Float` (Pro DAW).
+     - **Metadata & Cover Art Embedding** (MP3, M4A, FLAC):
+       - Aktifkan toggle "Sertakan Metadata & Cover Art" untuk menyematkan judul, artis, album, dan gambar cover ke dalam file audio.
+       - Untuk MP3, thumbnail otomatis dikonversi ke JPEG sebelum disematkan sebagai ID3 APIC frame.
+       - Menggunakan `--embed-thumbnail` + `--embed-metadata` dari yt-dlp.
 
 4. **Transfer Antar-Perangkat (Cross-Device via Wi-Fi & QR Code)**:
    - Unduh terlebih dahulu ke komputer server.
@@ -90,6 +94,7 @@ Dirancang khusus untuk melampaui website downloader pihak ketiga yang sering rus
     - Ekstraksi metadata penuh untuk setiap item playlist (judul, artis/uploader, durasi, cover/artwork) pada platform seperti SoundCloud, YouTube Music, dan lainnya.
     - Menggunakan `--yes-playlist` dengan `--playlist-end 100` untuk mengambil hingga 100 item pertama dengan metadata lengkap.
     - Pemilihan kualitas untuk playlist: pilih mode unduh (Video + Audio atau Audio Only) dan kualitas (Best, High, Medium, Low) sebelum memulai unduh.
+    - Toggle "Sertakan Metadata & Cover Art" tersedia di mode playlist (Audio Only) untuk format MP3/M4A/FLAC.
     - Auto-detect: jika konten hanya audio (mis. SoundCloud), tab "Video + Audio" otomatis disembunyikan.
 
 17. **FAQ Page**:
@@ -99,6 +104,11 @@ Dirancang khusus untuk melampaui website downloader pihak ketiga yang sering rus
     - `POST /api/download` menerima parameter `videoQualityPreset` (`144p`, `240p`, `360p`, `480p`, `720p`, `1080p`, `1440p`, `2160p`, `custom`).
     - Preset otomatis memilih format video dengan batasan resolusi maksimum via `bestvideo[height<=N]` dan menggabungkan dengan audio terbaik, lalu meremix ke kontainer **MP4**.
     - Opsi `custom` menggunakan ID format spesifik yang dipilih pengguna dan respek `videoContainer` (`mp4`, `webm`, `mkv`).
+
+19. **Metadata & Cover Art Embedding**:
+    - Aktifkan toggle di bawah format audio (MP3, M4A, FLAC) untuk menyematkan judul, artis, album, dan gambar cover ke dalam file audio.
+    - Berlaku untuk mode Audio tunggal sekaligus untuk playlist mode (Audio Only).
+    - Menggunakan `--embed-thumbnail` + `--embed-metadata` dari yt-dlp; MP3 otomatis mengkonversi thumbnail ke JPEG.
 
 ---
 
