@@ -2,7 +2,7 @@ import { Film, Music, Image, ListVideo } from 'lucide-react';
 import './ModeTabs.css';
 import useLocale from '../hooks/useLocale';
 
-const ModeTabs = ({ mode, onChange, hideVideoTab, hideTabsExceptPlaylist }) => {
+const ModeTabs = ({ mode, onChange, hideVideoTab, hideTabsExceptPlaylist, hidePlaylistTab }) => {
   const { t } = useLocale();
 
   return (
@@ -37,6 +37,7 @@ const ModeTabs = ({ mode, onChange, hideVideoTab, hideTabsExceptPlaylist }) => {
       </button>
     </>
     )}
+    {!hidePlaylistTab && (
     <button
       type="button"
       className={`tab-btn ${mode === 'playlist' ? 'active' : ''}`}
@@ -45,6 +46,7 @@ const ModeTabs = ({ mode, onChange, hideVideoTab, hideTabsExceptPlaylist }) => {
       <ListVideo size={18} />
       <span>{t('modeTabs.playlist')}</span>
     </button>
+    )}
   </div>
   );
 };

@@ -35,7 +35,7 @@ const MediaBox = ({
       <MediaPreview mediaInfo={mediaInfo} />
 
       {/* Mode Tabs - hide Video tab when content is audio-only */}
-      <ModeTabs mode={mode} onChange={onModeChange} hideVideoTab={isAudioOnly} hideTabsExceptPlaylist={mediaInfo?.isPlaylist} />
+      <ModeTabs mode={mode} onChange={onModeChange} hideVideoTab={isAudioOnly} hideTabsExceptPlaylist={mediaInfo?.isPlaylist} hidePlaylistTab={!mediaInfo?.isPlaylist} />
 
       {/* Video Mode Content */}
       {mode === 'video' && (
