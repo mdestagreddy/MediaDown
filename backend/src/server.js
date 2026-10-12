@@ -5,7 +5,7 @@ const fs = require('fs');
 const QRCode = require('qrcode');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
-const archiver = require('archiver');
+const archiver = require('archiver').Archiver;
 const { PassThrough } = require('stream');
 
 const { getMediaInfo, downloadMedia } = require('./services/ytDlpService');
@@ -517,7 +517,7 @@ app.get('/api/download/playlist/:taskId', (req, res) => {
   // Track active download transfer
   taskManager.startDownload(taskId);
 
-  const archive = archiver('zip', {
+  const archive = new archiver('zip', {
     zlib: { level: 9 }
   });
 
