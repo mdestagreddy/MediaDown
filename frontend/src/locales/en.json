@@ -160,11 +160,19 @@
     "image": "Image/Thumbnail",
     "playlist": "Playlist"
   },
+  "mediaPreview": {
+    "kreator": "Creator",
+    "views": "Views",
+    "source": "Open Source",
+    "mediaCount": "{{count}} media"
+  },
   "downloadAction": {
     "video": "Download Video ({{container}})",
     "audio": "Download Audio ({{format}})",
     "image": "Download Image/Thumbnail",
     "imageSub": "Downloading image/thumbnail from server at selected quality.",
+    "media": "Download Media",
+    "mediaSub": "Downloading media (images, videos, GIFs) from server.",
     "videoSub": "Server will download separate streams & mux them via FFmpeg instantly.",
     "preparing": "Preparing...",
     "downloadNow": "Download Now"
@@ -185,6 +193,12 @@
     "qualityHigh": "High",
     "qualityMedium": "Medium",
     "qualityLow": "Low"
+  },
+  "outputTemplate": {
+    "title": "Output Filename Template",
+    "custom": "Custom",
+    "reset": "Reset to Default",
+    "hint": "Use yt-dlp template variables. Supported: %(title)s, %(id)s, %(ext)s, %(uploader)s, %(playlist_index)s, etc. Changes are saved automatically."
   },
   "videoFormat": {
     "labelPreset": "1. Select Video Quality Preset (for beginners)",
@@ -273,6 +287,7 @@
   },
   "imageQuality": {
     "label": "Download Image at Selected Quality",
+    "mixedLabel": "Download Media at Selected Quality",
     "qualityLabel": "Quality/Compression",
     "formatLabel": "Output Format",
     "formatOriginal": "Original",
@@ -282,7 +297,23 @@
     "qualityMedium": "Medium (75%)",
     "qualityLow": "Light (60%)",
     "qualityPng": "PNG (Lossless)",
-    "qualityJpg": "JPG (90%)"
+     "qualityJpg": "JPG (90%)",
+    "sourceYtDlp": "Source: yt-dlp",
+    "sourceGallery": "Source: gallery-dl",
+    "gifNote": "Format conversion only applies to images; videos and GIFs are downloaded as-is."
+  },
+  "posts": {
+    "navTitle": "Posts",
+    "heroTitle": "Social Media Posts & Stories",
+    "heroDesc": "Download media from social media posts, stories, galleries, and albums — images and videos — across 15+ platforms via gallery-dl.",
+    "urlPlaceholder": "Paste post/story/album URL (e.g. Pixiv, DeviantArt, Instagram, Twitter, Reddit, etc.)...",
+    "analyzeBtn": "Extract Media",
+    "platformsTitle": "Supported Platforms",
+    "galleryDlNote": "Powered by gallery-dl — supports thumbnails, full-resolution images, videos, and album extraction from:",
+    "privateContentNote": "For private/exclusive content (e.g. Patreon, Fanbox, private Instagram), install cookies.txt.",
+    "platformsList": "Pixiv, DeviantArt, ArtStation, Instagram, Twitter/X, Reddit, Tumblr, Patreon, Fanbox, Civitai, Bluesky, TikTok, MangaDex, Kemono, Coomer",
+    "videoCount": "{{count}} video(s) included",
+    "noMediaFound": "No media found for this URL. The URL may require authentication (try uploading cookies.txt) or may not be supported by gallery-dl."
   },
   "status": {
     "downloading": "Downloading...",
@@ -311,7 +342,7 @@
     "saving": "Saving...",
     "deleteBtn": "Delete",
     "uploadBtn": "Choose cookies.txt File",
-    "successSaved": "✅ Cookies saved successfully!",
+     "successSaved": "✅ Cookies saved in your browser!",
     "successDeleted": "🗑️ Cookies deleted successfully.",
     "sectionLabel": "Install Account Cookies (Netscape Format):",
     "chooseFile": "Choose cookies.txt File",

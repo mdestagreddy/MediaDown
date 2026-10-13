@@ -1,0 +1,31 @@
+.posts-page-container {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 24px 16px 80px;
+}
+
+.posts-hero {
+  text-align: center;
+  margin: 24px 0 8px;
+}
+
+.posts-hero h1 {
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -1.2px;
+  line-height: 1.2;
+}
+
+.posts-hero .gradient-text {
+  background: linear-gradient(135deg, var(--hero-gradient-1), var(--hero-gradient-2), var(--hero-gradient-3));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.posts-hero .hero-desc {
+  font-size: 16px;
+  color: var(--text-muted);
+  max-width: 680px;
+  line-height: 1.6;
+  margin: 0 auto;
+}

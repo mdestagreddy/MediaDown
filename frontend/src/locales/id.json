@@ -160,11 +160,19 @@
     "image": "Gambar/Thumbnail",
     "playlist": "Playlist"
   },
+  "mediaPreview": {
+    "kreator": "Kreator",
+    "views": "Ditonton",
+    "source": "Buka Sumber",
+    "mediaCount": "{{count}} media"
+  },
   "downloadAction": {
     "video": "Unduh Video ({{container}})",
     "audio": "Unduh Audio ({{format}})",
     "image": "Unduh Gambar/Thumbnail",
     "imageSub": "Mengunduh gambar/thumbnail dari server dengan kualitas yang dipilih.",
+    "media": "Unduh Media",
+    "mediaSub": "Mengunduh media (gambar, video, GIF) dari server.",
     "videoSub": "Server akan mengunduh stream terpisah & menggabungkannya via FFmpeg secara instan.",
     "preparing": "Mempersiapkan...",
     "downloadNow": "Unduh Sekarang"
@@ -185,6 +193,12 @@
     "qualityHigh": "Tinggi",
     "qualityMedium": "Sedang",
     "qualityLow": "Rendah"
+  },
+  "outputTemplate": {
+    "title": "Template Nama File Output",
+    "custom": "Kustom",
+    "reset": "Reset ke Default",
+    "hint": "Gunakan variabel template yt-dlp. Didukung: %(title)s, %(id)s, %(ext)s, %(uploader)s, %(playlist_index)s, dll. Perubahan disimpan otomatis."
   },
   "videoFormat": {
     "labelPreset": "1. Pilih Kualitas Video (untuk orang awam)",
@@ -276,6 +290,7 @@
   },
   "imageQuality": {
     "label": "Unduh Gambar dengan Kualitas Pilihan",
+    "mixedLabel": "Unduh Media dengan Kualitas Pilihan",
     "qualityLabel": "Kualitas/Kompresi",
     "formatLabel": "Format Output",
     "formatOriginal": "Original (Asli)",
@@ -285,7 +300,23 @@
     "qualityMedium": "Sedang (75%)",
     "qualityLow": "Hemat (60%)",
     "qualityPng": "PNG (Lossless)",
-    "qualityJpg": "JPG (90%)"
+     "qualityJpg": "JPG (90%)",
+    "sourceYtDlp": "Sumber: yt-dlp",
+    "sourceGallery": "Sumber: gallery-dl",
+    "gifNote": "Konversi format hanya berlaku untuk gambar; video dan GIF diunduh apa adanya."
+  },
+  "posts": {
+    "navTitle": "Postingan",
+    "heroTitle": "Postingan & Cerita Media Sosial",
+    "heroDesc": "Unduh media dari postingan, cerita, galeri, dan album media sosial — gambar dan video — di 15+ platform via gallery-dl.",
+    "urlPlaceholder": "Tempel tautan postingan/cerita/album (mis. Pixiv, DeviantArt, Instagram, Twitter, Reddit, dll.)...",
+    "analyzeBtn": "Ekstrak Media",
+    "platformsTitle": "Platform yang Didukung",
+    "galleryDlNote": "Didukung oleh gallery-dl — mendukung thumbnail, gambar resolusi penuh, video, dan ekstraksi album dari:",
+    "privateContentNote": "Untuk konten pribadi/eksklusif (mis. Patreon, Fanbox, Instagram pribadi), pasang cookies.txt.",
+    "platformsList": "Pixiv, DeviantArt, ArtStation, Instagram, Twitter/X, Reddit, Tumblr, Patreon, Fanbox, Civitai, Bluesky, TikTok, MangaDex, Kemono, Coomer",
+    "videoCount": "{{count}} video termasuk",
+    "noMediaFound": "Tidak ada media ditemukan untuk URL ini. URL ini mungkin memerlukan autentikasi (silakan unggah cookies.txt) atau mungkin tidak didukung oleh gallery-dl."
   },
   "mediaBox": {
     "videoTab": "Video",
@@ -333,7 +364,7 @@
     "saving": "Menyimpan...",
     "deleteBtn": "Hapus",
     "uploadBtn": "Pilih File cookies.txt",
-    "successSaved": "✅ Cookies berhasil disimpan di server!",
+     "successSaved": "✅ Cookies berhasil disimpan di browser!",
     "successDeleted": "🗑️ Cookies berhasil dihapus.",
     "sectionLabel": "Pasang Cookies Akun (Format Netscape):",
     "chooseFile": "Pilih File cookies.txt",
@@ -393,7 +424,7 @@
      },
      "q3": {
        "question": "Apakah saya perlu memasang cookies?",
-       "answer": "Cookies bersifat opsional. Jika platform (seperti YouTube) memblokir akses anonim, pasang cookies akun Anda via tombol 'Atur Cookies' di header. Kami tidak menyimpan kredensial — semua data dibuang segeri."
+       "answer": "Cookies bersifat opsional. Jika platform (seperti YouTube) memblokir akses anonim, pasang cookies akun Anda via tombol 'Atur Cookies' di header. Cookies disimpan di browser Anda (IndexedDB), bukan di server."
      },
      "q4": {
        "question": "Bisakah saya memilih kualitas video dan audio secara terpisah?",

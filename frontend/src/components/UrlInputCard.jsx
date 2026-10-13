@@ -5,10 +5,7 @@ import {
   Sliders,
   AlertCircle,
   Key,
-  X,
-  Cpu,
-  Video,
-  Image
+  X
 } from 'lucide-react';
 import './UrlInputCard.css';
 import useLocale from '../hooks/useLocale';
@@ -20,9 +17,7 @@ const UrlInputCard = ({
   onPaste,
   isLoadingInfo,
   errorMessage,
-  onOpenCookieModal,
-  mediaEngine,
-  onMediaEngineChange
+  onOpenCookieModal
 }) => {
   const { t } = useLocale();
 
@@ -79,46 +74,6 @@ const UrlInputCard = ({
         </button>
       </div>
     </form>
-
-    {/* Engine Toggle */}
-    <div className="engine-toggle-wrapper">
-      <span className="engine-toggle-label">
-        <Cpu size={12} />
-        <span>{t('main.engineLabel')}</span>
-      </span>
-      <div className="engine-toggle">
-        <button
-          type="button"
-          className={`engine-btn ${mediaEngine === 'auto' ? 'active' : ''}`}
-          onClick={() => onMediaEngineChange('auto')}
-          title={t('main.engineAutoTooltip')}
-          disabled={isLoadingInfo}
-        >
-          <Cpu size={14} />
-          <span>{t('main.engineAuto')}</span>
-        </button>
-        <button
-          type="button"
-          className={`engine-btn ${mediaEngine === 'ytdl' ? 'active' : ''}`}
-          onClick={() => onMediaEngineChange('ytdl')}
-          title={t('main.engineYtdlTooltip')}
-          disabled={isLoadingInfo}
-        >
-          <Video size={14} />
-          <span>{t('main.engineYtdl')}</span>
-        </button>
-        <button
-          type="button"
-          className={`engine-btn ${mediaEngine === 'gallery' ? 'active' : ''}`}
-          onClick={() => onMediaEngineChange('gallery')}
-          title={t('main.engineGalleryTooltip')}
-          disabled={isLoadingInfo}
-        >
-          <Image size={14} />
-          <span>{t('main.engineGallery')}</span>
-        </button>
-      </div>
-    </div>
 
     {errorMessage && (
       <div className="error-banner fl-between gap-12 flex-wrap">

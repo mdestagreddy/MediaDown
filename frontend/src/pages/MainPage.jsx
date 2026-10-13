@@ -16,7 +16,7 @@ import './MainPage.css';
 
 const CAPTCHA_ENABLED = Boolean(import.meta.env.VITE_TURNSTILE_SITE_KEY) && import.meta.env.PROD;
 
-const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
+const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal, getCookieContent }) => {
   const { t } = useLocale();
   const [url, setUrl] = useState('');
   const [isLoadingInfo, setIsLoadingInfo] = useState(false);
@@ -24,7 +24,7 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
   const [errorMessage, setErrorMessage] = useState('');
 
   const [mode, setMode] = useState('video');
-  const [mediaEngine, setMediaEngine] = useState('auto');
+
   const [turnstileToken, setTurnstileToken] = useState(null);
 
   const [videoSettings, setVideoSettings] = useState({
@@ -55,6 +55,15 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
   // Track if media is audio-only (no video streams available)
   const [isAudioOnly, setIsAudioOnly] = useState(false);
 
+  const DEFAULT_OUTPUT_TEMPLATE = '%(title).120s [%(id)s].%(ext)s';
+  const [outputTemplate, setOutputTemplate] = useState(() => {
+    if (typeof localStorage !== 'undefined') {
+      const stored = localStorage.getItem('outputTemplate');
+      if (stored) return stored;
+    }
+    return DEFAULT_OUTPUT_TEMPLATE;
+  });
+
   const [activeTask, setActiveTask] = useState(null);
   const [isStartingDownload, setIsStartingDownload] = useState(false);
   const sseRef = useRef(null);
@@ -68,6 +77,20 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
 
   const updateImageSetting = (key, value) =>
     setImageSettings((prev) => ({ ...prev, [key]: value }));
+
+  const handleOutputTemplateChange = (value) => {
+    setOutputTemplate(value);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('outputTemplate', value);
+    }
+  };
+
+  const resetOutputTemplate = () => {
+    setOutputTemplate(DEFAULT_OUTPUT_TEMPLATE);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('outputTemplate');
+    }
+  };
 
   const handleTurnstileVerify = useCallback((token) => {
     setTurnstileToken(token || null);
@@ -104,130 +127,122 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
     setSelectedPlaylistItems([]);
 
     try {
-      const forceYtDlp = mediaEngine === 'ytdl';
-      const forceGallery = mediaEngine === 'gallery';
-
-      const shouldTryGallery = (mode === 'image' || forceGallery) && !forceYtDlp;
-      const shouldTryYtDlp = !forceGallery && (mediaEngine === 'auto' || mode !== 'image');
-
-      let imageInfoResult = null;
-
-      if (shouldTryGallery) {
-        try {
-          const imageJson = await fetchJson('/api/image-info', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: url.trim(), turnstileToken })
-          });
-
-          if (imageJson.success && imageJson.data?.images?.length > 0) {
-            imageInfoResult = imageJson.data;
-          }
-        } catch (imageErr) {
-          console.error('gallery-dl image-info failed:', imageErr);
-        }
-
-        if (imageInfoResult) {
-          setMediaInfo({
-            id: 'gallery',
-            title: t('main.galleryTitle'),
-            thumbnail: imageInfoResult.images?.[0]?.url || '',
-            extractor: 'gallery-dl',
-            webpage_url: url.trim(),
-            duration: 0,
-            durationFormatted: '00:00',
-            uploader: 'Unknown',
-            view_count: null,
-            imageQualities: imageInfoResult.qualities,
-            thumbnails: imageInfoResult.thumbnails,
-            images: imageInfoResult.images
-          });
-          setErrorMessage('');
-          setPlaylistItems([]);
-          setSelectedPlaylistItems([]);
-        } else if (!shouldTryYtDlp) {
-          throw new Error(t('main.galleryError'));
-        }
-      }
-
-      if (shouldTryYtDlp) {
-        let infoResult = null;
-        try {
-          const infoJson = await fetchJson('/api/info', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: url.trim(), includePlaylist: true, turnstileToken })
-          });
+      let infoResult = null;
+      try {
+         const cookies = getCookieContent ? await getCookieContent() : null;
+         const infoJson = await fetchJson('/api/info', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ url: url.trim(), includePlaylist: true, turnstileToken, cookies })
+           });
 
           if (infoJson.success) {
             infoResult = infoJson.data;
-          } else if (infoJson.error && infoJson.error.includes('No video formats')) {
-            if (!shouldTryGallery) {
-              try {
-                const imageJson = await fetchJson('/api/image-info', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ url: url.trim(), turnstileToken })
-                });
-                if (imageJson.success && imageJson.data?.images?.length > 0) {
-                  setMediaInfo({
-                    id: 'gallery',
-                    title: t('main.galleryTitle'),
-                    thumbnail: imageJson.data.images?.[0]?.url || '',
-                    extractor: 'gallery-dl',
-                    webpage_url: url.trim(),
-                    duration: 0,
-                    durationFormatted: '00:00',
-                    uploader: 'Unknown',
-                    view_count: null,
-                    imageQualities: imageJson.data.qualities,
-                    thumbnails: imageJson.data.thumbnails,
-                    images: imageJson.data.images
-                  });
-                  setPlaylistItems([]);
-                  setSelectedPlaylistItems([]);
-                  setErrorMessage('');
-                  return;
-                }
-              } catch (fallbackErr) {
-                console.error('gallery-dl fallback failed:', fallbackErr);
-              }
-            }
           }
         } catch (infoErr) {
           console.error('yt-dlp info failed:', infoErr);
         }
 
         if (infoResult) {
-          if (infoResult.isPlaylist) {
-            setMediaInfo(infoResult);
-            setPlaylistItems(infoResult.playlistItems || []);
-            setSelectedPlaylistItems([]);
-            setMode('playlist');
-          } else {
-            setMediaInfo(infoResult);
+        if (infoResult.isPlaylist) {
+          if (mode === 'image' && (infoResult.thumbnails?.length > 0 || infoResult.allThumbnails?.length > 0 || infoResult.playlistThumbnails?.length > 0)) {
+            const thumbs = (infoResult.playlistThumbnails?.length > 0 ? infoResult.playlistThumbnails : infoResult.thumbnails?.length > 0 ? infoResult.thumbnails : infoResult.allThumbnails);
+            setMediaInfo({
+              id: 'gallery',
+              title: t('main.galleryTitle'),
+              thumbnail: thumbs[0]?.url || infoResult.thumbnail,
+              extractor: infoResult.extractor,
+              webpage_url: infoResult.webpage_url,
+              duration: 0,
+              durationFormatted: '',
+              uploader: infoResult.uploader,
+              view_count: infoResult.view_count,
+              imageSource: 'yt-dlp',
+              imageQualities: [
+                { value: 'best', label: t('imageQuality.qualityBest'), format: 'original', quality: null },
+                { value: 'high', label: t('imageQuality.qualityHigh'), format: 'webp', quality: 85 },
+                { value: 'medium', label: t('imageQuality.qualityMedium'), format: 'webp', quality: 75 },
+                { value: 'low', label: t('imageQuality.qualityLow'), format: 'webp', quality: 60 },
+                { value: 'png', label: t('imageQuality.qualityPng'), format: 'png', quality: null },
+                { value: 'jpg', label: t('imageQuality.qualityJpg'), format: 'jpg', quality: 90 }
+              ],
+              thumbnails: thumbs,
+              images: thumbs.map((th, i) => ({
+                id: th.id || `thumb_${i}`,
+                url: th.url,
+                ext: th.ext || 'jpg',
+                label: `${th.width || ''}x${th.height || ''} ${(th.ext || 'jpg').toUpperCase()}`,
+                title: infoResult.title
+              }))
+            });
             setPlaylistItems([]);
             setSelectedPlaylistItems([]);
-
-            const audioOnly = (!infoResult.videoFormats || infoResult.videoFormats.length === 0) &&
-                  (!infoResult.allVideoFormats || infoResult.allVideoFormats.length === 0);
-            setIsAudioOnly(audioOnly);
-
-            if (audioOnly) {
-              // Auto-switch to Audio tab for audio-only content
-              setMode('audio');
-            } else {
-              if (infoResult.videoFormats && infoResult.videoFormats.length > 0) {
-                updateVideoSetting('selectedVideoFormat', infoResult.videoFormats[0].format_id);
-              } else {
-                updateVideoSetting('selectedVideoFormat', 'bestvideo');
-              }
-              updateVideoSetting('selectedAudioFormat', 'best');
-            }
+            setErrorMessage('');
+            return;
           }
-        } else if (!imageInfoResult) {
-          throw new Error(t('main.analyzeError'));
+          setMediaInfo(infoResult);
+          setPlaylistItems(infoResult.playlistItems || []);
+          setSelectedPlaylistItems([]);
+          setMode('playlist');
+          return;
+        } else {
+          setMediaInfo(infoResult);
+          setPlaylistItems([]);
+          setSelectedPlaylistItems([]);
+
+          const hasVideo = infoResult.videoFormats && infoResult.videoFormats.length > 0;
+          const hasAudioFormats = infoResult.allVideoFormats && infoResult.allVideoFormats.length > 0;
+          const audioOnly = !hasVideo && !hasAudioFormats;
+          setIsAudioOnly(audioOnly);
+
+          if (mode === 'image' && infoResult.thumbnails && infoResult.thumbnails.length > 0) {
+            setMediaInfo({
+              id: 'gallery',
+              title: t('main.galleryTitle'),
+              thumbnail: infoResult.thumbnails[0]?.url || infoResult.thumbnail,
+              extractor: infoResult.extractor,
+              webpage_url: infoResult.webpage_url,
+              duration: 0,
+              durationFormatted: '',
+              uploader: infoResult.uploader,
+              view_count: infoResult.view_count,
+              imageSource: 'yt-dlp',
+              imageQualities: [
+                { value: 'best', label: t('imageQuality.qualityBest'), format: 'original', quality: null },
+                { value: 'high', label: t('imageQuality.qualityHigh'), format: 'webp', quality: 85 },
+                { value: 'medium', label: t('imageQuality.qualityMedium'), format: 'webp', quality: 75 },
+                { value: 'low', label: t('imageQuality.qualityLow'), format: 'webp', quality: 60 },
+                { value: 'png', label: t('imageQuality.qualityPng'), format: 'png', quality: null },
+                { value: 'jpg', label: t('imageQuality.qualityJpg'), format: 'jpg', quality: 90 }
+              ],
+              thumbnails: infoResult.thumbnails,
+              images: infoResult.thumbnails.map((th, i) => ({
+                id: th.id || `thumb_${i}`,
+                url: th.url,
+                ext: th.ext || 'jpg',
+                label: `${th.width || ''}x${th.height || ''} ${(th.ext || 'jpg').toUpperCase()}`,
+                title: infoResult.title
+              }))
+            });
+            setPlaylistItems([]);
+            setSelectedPlaylistItems([]);
+            setErrorMessage('');
+          } else if (audioOnly) {
+            setMode('audio');
+          } else {
+            if (infoResult.videoFormats && infoResult.videoFormats.length > 0) {
+              updateVideoSetting('selectedVideoFormat', infoResult.videoFormats[0].format_id);
+            } else {
+              updateVideoSetting('selectedVideoFormat', 'bestvideo');
+            }
+            updateVideoSetting('selectedAudioFormat', 'best');
+          }
+          return;
         }
+      }
+
+      if (!infoResult) {
+        throw new Error(t('main.analyzeError'));
       }
 
       if (mode === 'video' && mediaInfo?.allVideoFormats && mediaInfo.allVideoFormats.length > 0) {
@@ -260,6 +275,7 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
     setErrorMessage('');
 
     try {
+      const cookies = getCookieContent ? await getCookieContent() : null;
       const payload = {
         url: url.trim(),
         mode,
@@ -273,10 +289,12 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
         sampleRate: audioSettings.sampleRate,
         bitDepth: audioSettings.bitDepth,
         embedMetadata: audioSettings.embedMetadata,
+        outputTemplate,
         imageQuality: imageSettings.imageQuality,
         imageFormat: imageSettings.imageFormat,
-        mediaEngine,
+         imageSource: mediaInfo.imageSource || null,
         totalImages: mode === 'image' ? (mediaInfo.images?.length || 0) : 0,
+        cookies,
         turnstileToken
       };
 
@@ -329,28 +347,30 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
     setErrorMessage('');
 
     try {
-      const payload = {
-        url: url.trim(),
-        mode: 'playlist',
-        title: mediaInfo.title,
-         videoFormatId: videoSettings.selectedVideoFormat,
-        audioFormatId: videoSettings.selectedAudioFormat,
-        videoContainer: videoSettings.videoContainer,
-        videoQualityPreset: videoSettings.videoQualityPreset,
-        audioFormat: audioSettings.audioTargetFormat,
-         audioQuality: audioSettings.audioBitrate,
-        sampleRate: audioSettings.sampleRate,
-        bitDepth: audioSettings.bitDepth,
-        embedMetadata: audioSettings.embedMetadata,
-        imageQuality: imageSettings.imageQuality,
-        imageFormat: imageSettings.imageFormat,
-        playlistItems: selectedPlaylistItems,
-        playlistMode: selectedPlaylistItems.length > 0 ? 'selected' : 'all',
-        playlistDownloadMode: audioSettings.playlistDownloadMode || 'video',
-        playlistQuality: audioSettings.playlistQuality || 'best',
-        mediaEngine,
-        turnstileToken
-      };
+       const cookies = getCookieContent ? await getCookieContent() : null;
+       const payload = {
+         url: url.trim(),
+         mode: 'playlist',
+         title: mediaInfo.title,
+          videoFormatId: videoSettings.selectedVideoFormat,
+         audioFormatId: videoSettings.selectedAudioFormat,
+         videoContainer: videoSettings.videoContainer,
+         videoQualityPreset: videoSettings.videoQualityPreset,
+         audioFormat: audioSettings.audioTargetFormat,
+          audioQuality: audioSettings.audioBitrate,
+         sampleRate: audioSettings.sampleRate,
+         bitDepth: audioSettings.bitDepth,
+         embedMetadata: audioSettings.embedMetadata,
+         outputTemplate,
+         imageQuality: imageSettings.imageQuality,
+         imageFormat: imageSettings.imageFormat,
+         playlistItems: selectedPlaylistItems,
+         playlistMode: selectedPlaylistItems.length > 0 ? 'selected' : 'all',
+         playlistDownloadMode: audioSettings.playlistDownloadMode || 'video',
+          playlistQuality: audioSettings.playlistQuality || 'best',
+         cookies,
+         turnstileToken
+       };
 
       const json = await fetchJson('/api/download', {
         method: 'POST',
@@ -518,8 +538,6 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
         isLoadingInfo={isLoadingInfo}
         errorMessage={errorMessage}
         onOpenCookieModal={onOpenCookieModal}
-        mediaEngine={mediaEngine}
-        onMediaEngineChange={setMediaEngine}
       />
 
       {CAPTCHA_ENABLED && (
@@ -552,6 +570,10 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal }) => {
           selectedPlaylistItems={selectedPlaylistItems}
           onPlaylistSelectionChange={setSelectedPlaylistItems}
           onDownloadPlaylistSelected={handleDownloadPlaylistSelected}
+          outputTemplate={outputTemplate}
+          onOutputTemplateChange={handleOutputTemplateChange}
+          onResetOutputTemplate={resetOutputTemplate}
+          defaultOutputTemplate={DEFAULT_OUTPUT_TEMPLATE}
         />
       )}
 

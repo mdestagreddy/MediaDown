@@ -17,11 +17,13 @@ const DownloadActionCard = ({
   videoContainer,
   audioTargetFormat,
   isStartingDownload,
-  onStartDownload
+  onStartDownload,
+  isPostMode = false
 }) => {
   const { t } = useLocale();
 
   const modeLabel = () => {
+    if (isPostMode) return t('downloadAction.media');
     if (mode === 'video') return t('downloadAction.video', { container: videoContainer.toUpperCase() });
     if (mode === 'audio') {
       const fmt = AUDIO_FORMAT_DISPLAY[audioTargetFormat] || audioTargetFormat.toUpperCase();
@@ -32,6 +34,7 @@ const DownloadActionCard = ({
   };
 
   const modeSub = () => {
+    if (isPostMode) return t('downloadAction.mediaSub');
     if (mode === 'image') return t('downloadAction.imageSub');
     return t('downloadAction.videoSub');
   };

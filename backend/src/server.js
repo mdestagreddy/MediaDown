@@ -9,7 +9,7 @@ const { ZipArchive } = require('archiver');
 const { PassThrough } = require('stream');
 
 const { getMediaInfo, downloadMedia } = require('./services/ytDlpService');
-const { getImageInfo, downloadImages } = require('./services/galleryDlService');
+const { getImageInfo, downloadPostMedia } = require('./services/galleryDlService');
 const taskManager = require('./services/taskManager');
 const { getLocalIp } = require('./utils/network');
 
@@ -32,8 +32,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use('/api/', apiLimiter);
 
@@ -84,44 +84,9 @@ app.get('/api/network-info', (req, res) => {
   });
 });
 
-// Check and manage YouTube cookies for bypassing bot checks
-const cookiesFile = path.resolve(__dirname, '../cookies.txt');
-
-app.get('/api/cookies', (req, res) => {
-  const exists = fs.existsSync(cookiesFile);
-  res.json({
-    exists,
-    size: exists ? fs.statSync(cookiesFile).size : 0
-  });
-});
-
-app.post('/api/cookies', (req, res) => {
-  const { content } = req.body;
-  if (!content || !content.trim()) {
-    return res.status(400).json({ error: 'Konten cookies tidak boleh kosong.' });
-  }
-  try {
-    fs.writeFileSync(cookiesFile, content.trim(), 'utf8');
-    res.json({ success: true, message: 'Cookies YouTube berhasil disimpan!' });
-  } catch (err) {
-    res.status(500).json({ error: 'Gagal menyimpan file cookies: ' + err.message });
-  }
-});
-
-app.delete('/api/cookies', (req, res) => {
-  try {
-    if (fs.existsSync(cookiesFile)) {
-      fs.unlinkSync(cookiesFile);
-    }
-    res.json({ success: true, message: 'File cookies berhasil dihapus.' });
-  } catch (err) {
-    res.status(500).json({ error: 'Gagal menghapus file cookies: ' + err.message });
-  }
-});
-
 // Extract media information (Video & Audio streams)
 app.post('/api/info', async (req, res) => {
-  const { url, includePlaylist = false, turnstileToken } = req.body;
+  const { url, includePlaylist = false, turnstileToken, cookies = null } = req.body;
   if (!url || typeof url !== 'string' || !url.trim()) {
     return res.status(400).json({ error: 'URL media harus disertakan.' });
   }
@@ -132,7 +97,7 @@ app.post('/api/info', async (req, res) => {
   }
 
   try {
-    const info = await getMediaInfo(url.trim(), { includePlaylist });
+    const info = await getMediaInfo(url.trim(), { includePlaylist, cookies });
     res.json({ success: true, data: info });
   } catch (err) {
     // Check if yt-dlp indicates this is a playlist and retry with playlist mode
@@ -159,11 +124,11 @@ app.post('/api/info', async (req, res) => {
   }
 });
 
-// Get available images for download mode (uses gallery-dl)
-app.post('/api/image-info', async (req, res) => {
-  const { url, turnstileToken } = req.body;
+// Get available media info for posts/stories (uses gallery-dl)
+app.post('/api/posts-info', async (req, res) => {
+  const { url, turnstileToken, cookies = null } = req.body;
   if (!url || typeof url !== 'string' || !url.trim()) {
-    return res.status(400).json({ error: 'URL media harus disertikan.' });
+    return res.status(400).json({ error: 'URL media harus disertakan.' });
   }
 
   const turnstile = await verifyTurnstile(turnstileToken, req.ip);
@@ -172,16 +137,166 @@ app.post('/api/image-info', async (req, res) => {
   }
 
   try {
-    const info = await getImageInfo(url.trim());
+    const info = await getImageInfo(url.trim(), cookies);
     res.json({ success: true, data: info });
   } catch (err) {
     console.error('[Image Info Error]', err.message);
     res.json({
       success: false,
-      data: { images: [], qualities: [], count: 0 },
+      data: { images: [], videos: [], mediaItems: [], qualities: [], count: 0 },
       error: err.message || 'Gagal mendapatkan informasi gambar.'
     });
   }
+});
+
+// Media proxy endpoint - streams media (videos) through backend to avoid CORS/403
+const https = require('https');
+const http = require('http');
+
+function getFileExtension(contentType) {
+  if (!contentType) return '.jpg';
+  if (contentType.includes('jpeg') || contentType.includes('jpg')) return '.jpg';
+  if (contentType.includes('png')) return '.png';
+  if (contentType.includes('webp')) return '.webp';
+  if (contentType.includes('gif')) return '.gif';
+  if (contentType.includes('mp4')) return '.mp4';
+  if (contentType.includes('webm')) return '.webm';
+  if (contentType.includes('quicktime') || contentType.includes('mov')) return '.mov';
+  return '.bin';
+}
+
+function parseCookiesString(content, targetDomain) {
+  if (!content || !content.trim()) return '';
+  try {
+    const lines = content.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'));
+    const cookies = [];
+    const relevantDomains = ['.twitter.com', '.x.com', '.twimg.com', 'twitter.com', 'x.com'];
+
+    for (const line of lines) {
+      const parts = line.split('\t');
+      if (parts.length >= 7) {
+        const domain = parts[0];
+        const name = parts[5];
+        let value = parts[6];
+        value = value.replace(/[\r\n\t]/g, '');
+
+        // Filter to relevant domains only
+        const isRelevant = !targetDomain
+          || relevantDomains.some(d => domain === d || domain.endsWith(d))
+          || domain.includes(targetDomain);
+        if (isRelevant && name && value) {
+          cookies.push(`${name}=${value}`);
+        }
+      }
+    }
+    return cookies.join('; ');
+  } catch {
+    return '';
+  }
+}
+
+function parseCookiesFile(filePath, targetDomain) {
+  if (!fs.existsSync(filePath)) return '';
+  const content = fs.readFileSync(filePath, 'utf8');
+  return parseCookiesString(content, targetDomain);
+}
+
+app.get('/api/media-proxy', async (req, res) => {
+  const { url: mediaUrl, filename, cookies: cookiesParam } = req.query;
+  if (!mediaUrl || typeof mediaUrl !== 'string') {
+    return res.status(400).json({ error: 'URL parameter is required.' });
+  }
+
+  let currentUrl = mediaUrl;
+  let attempts = 0;
+  const maxRedirects = 5;
+
+  const fetchWithRedirects = () => {
+    if (attempts >= maxRedirects) {
+      return res.status(502).json({ error: 'Too many redirects' });
+    }
+    attempts++;
+
+    const urlObj = new URL(currentUrl);
+    const cookieHeader = cookiesParam ? parseCookiesString(decodeURIComponent(cookiesParam), urlObj.hostname) : '';
+
+    const client = urlObj.protocol === 'https:' ? https : http;
+    const options = {
+      method: 'GET',
+      hostname: urlObj.hostname,
+      path: urlObj.pathname + urlObj.search,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': '*/*',
+        'Referer': urlObj.origin + '/',
+        ...(cookieHeader ? { 'Cookie': cookieHeader } : {}),
+      },
+    };
+
+    const proxyReq = client.request(options, (proxyRes) => {
+      if (proxyRes.statusCode === 301 || proxyRes.statusCode === 302 || proxyRes.statusCode === 307 || proxyRes.statusCode === 308) {
+        proxyRes.resume();
+        const location = proxyRes.headers.location;
+        if (!location) {
+          return res.status(502).json({ error: 'Redirect without location' });
+        }
+        currentUrl = new URL(location, currentUrl).href;
+        return fetchWithRedirects();
+      }
+
+      if (proxyRes.statusCode !== 200) {
+        proxyRes.resume();
+        return res.status(proxyRes.statusCode || 502).json({
+          error: `Media proxy returned ${proxyRes.statusCode}`,
+          status: proxyRes.statusCode
+        });
+      }
+
+      const contentType = proxyRes.headers['content-type'] || 'application/octet-stream';
+
+      // Generate filename from query param, URL path, or content type
+      let downloadName = filename || '';
+      if (!downloadName) {
+        const urlPath = new URL(currentUrl).pathname;
+        const baseName = path.basename(urlPath).split('?')[0];
+        const ext = path.extname(baseName) || getFileExtension(contentType);
+        downloadName = baseName.replace(/\.[^.]+$/, '') || 'media';
+        downloadName = downloadName + ext;
+      }
+
+      // Sanitize filename for HTTP header (remove newlines, control chars, non-ASCII)
+      downloadName = downloadName
+        .replace(/[\r\n\t\x00-\x1f\x7f]/g, ' ')
+        .replace(/[^\x20-\x7e]/g, '')
+        .replace(/\s+/g, '_')
+        .trim();
+
+      // Ensure we have a valid extension
+      const currentExt = path.extname(downloadName);
+      if (!currentExt) {
+        downloadName += getFileExtension(contentType);
+      }
+
+      if (!downloadName || downloadName === path.extname(downloadName)) {
+        downloadName = 'media' + getFileExtension(contentType);
+      }
+
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Length', proxyRes.headers['content-length'] || '');
+      res.setHeader('Content-Disposition', `attachment; filename="${downloadName}"`);
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+
+      proxyRes.pipe(res);
+    });
+
+    proxyReq.on('error', (err) => {
+      res.status(502).json({ error: `Media proxy error: ${err.message}` });
+    });
+
+    proxyReq.end();
+  };
+
+  fetchWithRedirects();
 });
 
 // Start media download & processing task
@@ -198,6 +313,7 @@ app.post('/api/download', async (req, res) => {
      sampleRate = 'auto',
      bitDepth = 'auto',
      embedMetadata = false,
+     outputTemplate,
      title = 'media',
     imageQuality = 'best',
     imageFormat = 'original',
@@ -205,9 +321,11 @@ app.post('/api/download', async (req, res) => {
      playlistMode = 'all',
      playlistDownloadMode = 'video',
      playlistQuality = 'best',
-     mediaEngine = 'auto',
-    totalImages = 0,
-    turnstileToken
+      mediaEngine = 'auto',
+     imageSource = null,
+      totalImages = 0,
+      cookies = null,
+     turnstileToken
   } = req.body;
 
   if (!url || !url.trim()) {
@@ -223,23 +341,25 @@ app.post('/api/download', async (req, res) => {
   const task = taskManager.createTask(taskId, {
     url: url.trim(),
     mode,
-    title,
-     videoFormatId,
-     audioFormatId,
-     videoContainer,
-     videoQualityPreset,
+     title,
+      videoFormatId,
+      audioFormatId,
+      videoContainer,
+      videoQualityPreset,
      audioFormat,
-     audioQuality,
-     sampleRate,
-     bitDepth,
-     embedMetadata,
+      audioQuality,
+      sampleRate,
+      bitDepth,
+      embedMetadata,
+      outputTemplate,
      imageQuality,
     imageFormat,
      playlistItems,
      playlistMode,
      playlistDownloadMode,
-     playlistQuality,
-     mediaEngine
+      playlistQuality,
+      mediaEngine,
+      imageSource
   });
 
   res.json({
@@ -251,10 +371,11 @@ app.post('/api/download', async (req, res) => {
   });
 
    // Route to appropriate download service based on mode and mediaEngine
-  const useGalleryDl = mediaEngine === 'gallery' || (mediaEngine === 'auto' && mode === 'image');
-  const engineName = useGalleryDl ? 'gallery-dl' : 'yt-dlp';
-  taskManager.addLog(taskId, `Tugas dibuat - Mode: ${mode}, Engine: ${engineName}, Judul: ${title}`);
-  const useYtDlp = mediaEngine === 'ytdl' || mediaEngine === 'auto' && mode !== 'image';
+   // When imageSource is 'yt-dlp', use yt-dlp for image download (fallback when gallery-dl is unavailable)
+   const useGalleryDl = mediaEngine === 'gallery' || (mediaEngine === 'auto' && mode === 'image' && imageSource !== 'yt-dlp');
+   const engineName = useGalleryDl ? 'gallery-dl' : 'yt-dlp';
+   taskManager.addLog(taskId, `Tugas dibuat - Mode: ${mode}, Engine: ${engineName}, Judul: ${title}`);
+   const useYtDlp = mediaEngine === 'ytdl' || mediaEngine === 'auto' && mode !== 'image';
 
   const progressCallback = (prog) => {
     const queueLen = taskManager.queue.length;
@@ -274,13 +395,14 @@ app.post('/api/download', async (req, res) => {
   };
 
   const downloadFn = () => {
-    if (useGalleryDl) {
-      return downloadImages({
+      if (useGalleryDl) {
+      return downloadPostMedia({
         url: url.trim(),
         outputDir: task.taskDir,
         imageFormat,
-        imageQuality: typeof imageQuality === 'string' && !isNaN(imageQuality) ? parseInt(imageQuality) : imageQuality,
         totalImages,
+        outputTemplate,
+        cookies,
         onProgress: progressCallback,
         onLog: (msg) => {
           console.log(`[Task ${taskId}] ${msg}`);
@@ -301,10 +423,12 @@ app.post('/api/download', async (req, res) => {
        sampleRate,
        bitDepth,
        embedMetadata,
+       outputTemplate,
        imageQuality: typeof imageQuality === 'string' && !isNaN(imageQuality) ? parseInt(imageQuality) : imageQuality,
       imageFormat,
       playlistItems: playlistItems,
       playlistMode: playlistMode,
+      cookies,
       onProgress: progressCallback,
       onLog: (msg) => {
         console.log(`[Task ${taskId}] ${msg}`);

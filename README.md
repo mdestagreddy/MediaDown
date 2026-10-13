@@ -68,7 +68,7 @@ Dirancang khusus untuk melampaui website downloader pihak ketiga yang sering rus
    - On startup & tiap 2 menit, semua folder/task yang tidak terlacak (`backend/downloads/`, termasuk sisa crash) dan file `.part/.tmp` otomatis dihapus.
 
 10. **Anti-Bot (Cloudflare Turnstile) — production only**:
-   - Proteksi captcha pada `POST /api/info`, `/api/image-info`, `/api/download`.
+    - Proteksi captcha pada `POST /api/info`, `/api/posts-info`, `/api/download`.
    - Aktif **hanya di production** (`import.meta.env.PROD`) ketika `VITE_TURNSTILE_SITE_KEY` diset. Di dev, captcha otomatis tidak muncul.
    - Jika `TURNSTILE_SECRET_KEY` belum di-set di backend, semua request lolos (graceful degradation).
 
@@ -85,6 +85,13 @@ Dirancang khusus untuk melampaui website downloader pihak ketiga yang sering rus
 14. **Media Preview Before Download**:
     - Di halaman *Ready*, tonton dengar pratinjau video/audio/gambar langsung di browser sebelum mengunduh.
     - Endpoint `/api/preview/:taskId/:filename?` melayani file dengan `Content-Disposition: inline`.
+
+14. **Anti-Bot Cookies (Per-Browser IndexedDB Storage)**:
+    - Cookies disimpan langsung di browser pengguna via **IndexedDB** (nama database: `MediaDownDB`, store: `cookies`), bukan di server.
+    - Setiap browser/perangkat menyimpan cookies-nya sendiri — tidak ada berbagi cookies antar pengguna.
+    - Cookies dikirimkan ke backend sebagai string pada setiap request (`/api/info`, `/api/posts-info`, `/api/download`, `/api/media-proxy`).
+    - Backend menulis cookies ke file temp sementara (`os.tmpdir()`) untuk proses yt-dlp/gallery-dl, lalu menghapusnya otomatis setelah selesai.
+    - Untuk `/api/media-proxy`, cookies diterima via query parameter (dengan batas ukuran 6KB untuk menghindari URL yang terlalu panjang).
 
 15. **Manual Server File Deletion**:
     - Tombol "Hapus File dari Server Sekarang" di *Ready Box* memungkinkan hapus manual file.
@@ -114,6 +121,14 @@ Dirancang khusus untuk melampaui website downloader pihak ketiga yang sering rus
 
 ## 🔒 Keamanan
 
+### Kuki Anti-Bot (IndexedDB per-browser)
+
+Kuki (cookies) disimpan **di browser Anda** melalui IndexedDB, bukan di server. Ini berarti:
+
+- Setiap browser atau perangkat menyimpan kuki-nya masing-masing.
+- Kuki dikirimkan ke backend hanya bersamaan dengan request unduhan/info yang sedang dilakukan, lalu file temp dihapus sesaiknya selesai.
+- Untuk mengatur kuki, klik tombol **Anti-Bot & Cookies** di header, lalu tempelkan isi file `cookies.txt` (format Netscape) yang diekspor dari ekstensi browser seperti *Get cookies.txt*.
+
 ### Cloudflare Turnstile (anti-bot)
 - **Get keys**: [Cloudflare Dashboard → Turnstile](https://dash.cloudflare.com/)
 - **Backend** (`backend/.env`):
@@ -126,7 +141,7 @@ Dirancang khusus untuk melampaui website downloader pihak ketiga yang sering rus
   ```
 - Aktif otomatis di **production build** saja. Di `npm run dev`, captcha tidak muncul.
 
-### Rate limiting
+### Rate Limiting
 | Aturan | Nilai |
 |---|---|
 | Window | 60 detik |
@@ -185,7 +200,6 @@ Edit `backend/.env`:
 ```
 PORT=5000
 TURNSTILE_SECRET_KEY=your_cloudflare_secret        # optional, kosongkan = nonaktif
-YTDLP_COOKIE_FILE=/app/cookies/cookies.txt         # optional
 ```
 
 Edit `frontend/.env` (build-time):
@@ -240,13 +254,15 @@ MediaDown/
 │   │   │   └── LocaleContext.jsx  # React Context provider untuk i18n state
 │   │   ├── hooks/
 │   │   │   ├── useLocale.js       # Hook konsumsi locale context (t, setLocale, locale)
-│   │   │   └── useTheme.js        # Hook tema (auto/light/dark) + prefers-color-scheme
+│   │   │   ├── useTheme.js        # Hook tema (auto/light/dark) + prefers-color-scheme
+│   │   │   └── useCookies.js      # Hook manajemen cookies via IndexedDB (per-browser)
 │   │   ├── locales/
 │   │   │   ├── index.js           # Loader JSON + translate() helper
 │   │   │   ├── id.json            # String Indonesia
 │   │   │   └── en.json            # String English
 │   │   ├── utils/
-│   │   │   └── api.js             # fetchJson helper
+│   │   │   ├── api.js             # fetchJson helper
+│   │   │   └── indexedDB.js       # IndexedDB wrapper untuk penyimpanan cookies per-browser
 │   │   ├── components/            # Komponen UI terpisah
 │   │   │   ├── Header.jsx             # Brand, status server, tema, tombol cookies (route-aware)
 │   │   │   ├── Footer.jsx             # Copyright, link navigasi, GitHub, powered-by, language toggle

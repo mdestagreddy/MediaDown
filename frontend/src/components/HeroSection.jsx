@@ -1,17 +1,19 @@
 import './HeroSection.css';
 import useLocale from '../hooks/useLocale';
 
-const HeroSection = () => {
+const HeroSection = ({ titleKey = 'main.heroTitle', titleSpanKey = 'main.heroTitleSpan', descKey = 'main.heroDesc', platformsKey = 'main.platforms' }) => {
   const { t } = useLocale();
-  const platforms = t('main.platforms').split(',');
+  const platforms = t(platformsKey).split(',');
+  const spanText = t(titleSpanKey);
 
   return (
     <section className="hero-section">
       <h1 className="hero-title">
-        {t('main.heroTitle')} <span className="gradient-text">{t('main.heroTitleSpan')}</span>
+        {t(titleKey)}{' '}
+        {spanText && <span className="gradient-text">{spanText}</span>}
       </h1>
       <p className="hero-desc">
-        {t('main.heroDesc')}
+        {t(descKey)}
       </p>
 
       {/* Supported Platforms */}

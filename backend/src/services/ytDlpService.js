@@ -1,10 +1,21 @@
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
-const cookiesPath = path.resolve(__dirname, '../../cookies.txt');
+function writeTempCookies(cookies) {
+  if (!cookies || !cookies.trim()) return null;
+  const tmpFile = path.join(os.tmpdir(), `cookies_${Date.now()}_${Math.random().toString(36).slice(2)}.txt`);
+  fs.writeFileSync(tmpFile, cookies.trim(), 'utf8');
+  return tmpFile;
+}
 
-function getAntiBotArgs() {
+function cleanupTempCookies(filePath) {
+  if (!filePath) return;
+  try { fs.unlinkSync(filePath); } catch {}
+}
+
+function getAntiBotArgs(cookies) {
   const args = [
     '--retries',
     '5',
@@ -12,11 +23,15 @@ function getAntiBotArgs() {
     '5'
   ];
 
-  if (fs.existsSync(cookiesPath)) {
-    args.push('--cookies', cookiesPath);
+  let tempCookiesPath = null;
+  if (cookies && typeof cookies === 'string' && cookies.trim()) {
+    tempCookiesPath = writeTempCookies(cookies);
+    if (tempCookiesPath) {
+      args.push('--cookies', tempCookiesPath);
+    }
   }
 
-  return args;
+  return { args, tempCookiesPath };
 }
 
 /**
@@ -24,13 +39,14 @@ function getAntiBotArgs() {
  */
 async function getMediaInfo(url, options = {}) {
   return new Promise((resolve, reject) => {
-    const { includePlaylist = false } = options;
+    const { includePlaylist = false, cookies = null } = options;
 
+    const { args: antiBotArgs, tempCookiesPath } = getAntiBotArgs(cookies);
     const args = [
       '--dump-single-json',
       '--no-warnings',
       '--ignore-errors',
-      ...getAntiBotArgs(),
+      ...antiBotArgs,
       url
     ];
 
@@ -58,6 +74,8 @@ async function getMediaInfo(url, options = {}) {
     });
 
     child.on('close', (code) => {
+      cleanupTempCookies(tempCookiesPath);
+
       if (code !== 0 || !stdoutData.trim()) {
         const errorMsg = stderrData.trim() || 'Gagal mengekstrak informasi media dari URL yang diberikan.';
         return reject(new Error(errorMsg));
@@ -217,6 +235,7 @@ function processRawInfo(info) {
     webpage_url: info.webpage_url || info.original_url || '',
     extractor: info.extractor_key || info.extractor || 'Web',
     view_count: info.view_count || null,
+    thumbnails: info.thumbnails || [],
     videoFormats: distinctVideoFormats,
     allVideoFormats: videoFormats,
     audioFormats
@@ -287,6 +306,40 @@ function processPlaylistInfo(info) {
     playlistThumbnail = info.thumbnails[info.thumbnails.length - 1].url;
   }
 
+  // Collect thumbnails from all playlist entries for Image mode previews
+  const playlistThumbnails = [];
+  if (Array.isArray(info.entries)) {
+    for (const entry of info.entries) {
+      if (!entry || typeof entry !== 'object') continue;
+
+      const entryThumbs = entry.thumbnails || [];
+      const entryThumbUrl = entry.thumbnail || '';
+
+      if (entryThumbUrl) {
+        playlistThumbnails.push({
+          url: entryThumbUrl,
+          width: entry.thumbnail_width || null,
+          height: entry.thumbnail_height || null,
+          id: entry.id || '',
+          title: entry.title || ''
+        });
+      }
+
+      for (const thumb of entryThumbs) {
+        const thumbUrl = typeof thumb === 'string' ? thumb : thumb.url;
+        if (thumbUrl) {
+          playlistThumbnails.push({
+            url: thumbUrl,
+            width: thumb.width || null,
+            height: thumb.height || null,
+            id: entry.id || '',
+            title: entry.title || ''
+          });
+        }
+      }
+    }
+  }
+
   return {
     id: info.id || '',
     title: info.title || info.name || 'Untitled Playlist',
@@ -300,7 +353,12 @@ function processPlaylistInfo(info) {
     webpage_url: info.webpage_url || info.original_url || '',
     uploader: info.uploader || info.channel || info.creator || 'Unknown',
     playlistItems: playlistItems,
-     hasNext: Array.isArray(info.entries) && info.entries.length >= 100
+    hasNext: Array.isArray(info.entries) && info.entries.length >= 100,
+    thumbnails: info.thumbnails || [],
+    allThumbnails: Array.isArray(info.entries) && info.entries.length > 0
+      ? info.entries[0].thumbnails || []
+      : [],
+    playlistThumbnails
   };
 }
 
@@ -319,18 +377,23 @@ function downloadMedia({
   audioQuality = '320k',
   sampleRate = 'auto',
   bitDepth = 'auto',
-  embedMetadata = false,
-  imageQuality = 'best',
+   embedMetadata = false,
+   outputTemplate,
+   imageQuality = 'best',
   imageFormat = 'original',
   playlistItems: selectedItems = [],
   playlistMode = 'all', // 'all' | 'selected'
   playlistDownloadMode = 'video', // 'video' | 'audio' (for playlist mode)
   playlistQuality = 'best', // 'best' | 'high' | 'medium' | 'low' (for playlist mode)
+  cookies = null,
   onProgress,
   onLog
 }) {
   return new Promise((resolve, reject) => {
-    const outputTemplate = path.join(outputDir, '%(title).120s [%(id)s].%(ext)s');
+    const { args: antiBotArgs, tempCookiesPath } = getAntiBotArgs(cookies);
+    const outputTemplateFinal = outputTemplate
+      ? path.join(outputDir, outputTemplate)
+      : path.join(outputDir, '%(title).120s [%(id)s].%(ext)s');
 
     // Output template
     const args = [
@@ -338,7 +401,7 @@ function downloadMedia({
       '--newline',
       '--progress-template',
       '%(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s|%(progress.downloaded_bytes)s|%(progress.total_bytes)s|%(progress.status)s',
-      ...getAntiBotArgs(),
+      ...antiBotArgs,
     ];
 
     // Playlist mode: don't use --no-playlist if downloading playlist
@@ -407,11 +470,14 @@ function downloadMedia({
       args.push('--no-playlist');
     }
 
-     args.push('-o', outputTemplate);
+     args.push('-o', outputTemplateFinal);
 
     if (mode === 'image') {
       // Image/Thumbnail Download Mode
-      args.push('--write-thumbnail');
+      // Use --skip-download to only fetch the thumbnail, not the full video
+      // Use separate thumbnail template so %(ext)s is resolved correctly
+      args.push('--skip-download', '--write-thumbnail');
+      args.push('-o', `thumbnail:${outputTemplateFinal}`);
 
       // Convert to desired format and quality
       if (imageFormat && imageFormat !== 'original') {
@@ -426,7 +492,7 @@ function downloadMedia({
           args.push('--postprocessor-args', `ConvertThumbnails:-q:v ${100 - imageQuality}`);
         }
       }
-      } else if (mode === 'audio') {
+    } else if (mode === 'audio') {
        // Audio Extraction Mode
        const formatSelector = audioFormatId && audioFormatId !== 'best' ? audioFormatId : 'bestaudio/best';
        args.push('-f', formatSelector);
@@ -605,13 +671,15 @@ function downloadMedia({
     });
 
     child.on('close', (code) => {
+      cleanupTempCookies(tempCookiesPath);
+
       if (code !== 0) {
         return reject(new Error(stderrData.trim() || `Proses yt-dlp keluar dengan kode ${code}`));
       }
 
       // Find the generated file(s) in outputDir
       try {
-        const allFiles = fs.readdirSync(outputDir).filter(f => !f.endsWith('.part') && !f.endsWith('.ytdl'));
+        const allFiles = fs.readdirSync(outputDir).filter(f => !f.endsWith('.part') && !f.endsWith('.ytdl') && !f.endsWith('.info.json'));
         if (allFiles.length === 0) {
           return reject(new Error('File hasil unduhan tidak ditemukan di server.'));
         }

@@ -3,6 +3,7 @@ import ModeTabs from './ModeTabs';
 import VideoFormatSelector from './VideoFormatSelector';
 import AudioFormatSelector from './AudioFormatSelector';
 import DownloadActionCard from './DownloadActionCard';
+import OutputTemplateSelector from './OutputTemplateSelector';
 import ImageQualitySelector from './ImageQualitySelector';
 import PlaylistSelector from './PlaylistSelector';
 import { Sliders, CheckCircle2, Info } from 'lucide-react';
@@ -25,7 +26,11 @@ const MediaBox = ({
   playlistItems,
   selectedPlaylistItems,
   onPlaylistSelectionChange,
-  onDownloadPlaylistSelected
+  onDownloadPlaylistSelected,
+  outputTemplate,
+  onOutputTemplateChange,
+  onResetOutputTemplate,
+  defaultOutputTemplate
 }) => {
   const { t } = useLocale();
 
@@ -77,6 +82,7 @@ const MediaBox = ({
           onSelectImageQuality={(value) => onImageSettingChange('imageQuality', value)}
           selectedImageFormat={imageSettings?.imageFormat || 'original'}
           onSelectImageFormat={(value) => onImageSettingChange('imageFormat', value)}
+          imageSource={mediaInfo?.imageSource}
         />
       )}
 
@@ -149,6 +155,16 @@ const MediaBox = ({
             playlistTitle={mediaInfo.title}
           />
         </>
+      )}
+
+      {/* Output Template Customization */}
+      {mode !== 'playlist' && (
+        <OutputTemplateSelector
+          outputTemplate={outputTemplate}
+          onOutputTemplateChange={onOutputTemplateChange}
+          onResetOutputTemplate={onResetOutputTemplate}
+          defaultOutputTemplate={defaultOutputTemplate}
+        />
       )}
 
       {/* Start Download Button */}

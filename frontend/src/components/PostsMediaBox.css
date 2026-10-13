@@ -1,0 +1,34 @@
+.posts-media-box {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.posts-media-box .media-preview-header {
+  gap: 16px;
+}
+
+.posts-media-box .media-preview-header.posts-layout {
+  gap: 20px;
+}
+
+.posts-media-box .media-carousel-container {
+  width: 100%;
+}
+
+.posts-media-box .image-quality-selector {
+  margin-top: 4px;
+}
+
+@media (max-width: 768px) {
+  .posts-media-box {
+    gap: 16px;
+  }
+
+  .posts-media-box .media-preview-header .thumbnail-wrap {
+    width: 100%;
+    height: 200px;
+  }
+}

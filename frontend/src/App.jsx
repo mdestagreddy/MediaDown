@@ -5,11 +5,13 @@ import Footer from './components/Footer';
 import QrModal from './components/QrModal';
 import CookieModal from './components/CookieModal';
 import MainPage from './pages/MainPage';
+import PostsPage from './pages/PostsPage';
 import TermsPage from './pages/Terms';
 import FaqPage from './pages/Faq';
 import { useTheme } from './hooks/useTheme';
 import { fetchJson } from './utils/api';
 import LocaleProvider from './contexts/LocaleProvider';
+import useCookies from './hooks/useCookies';
 
 function App() {
   const { theme, resolvedTheme, toggleTheme } = useTheme();
@@ -17,34 +19,32 @@ function App() {
   // Network Info (LAN IP for cross device)
   const [networkInfo, setNetworkInfo] = useState(null);
 
-  // Cookies / Anti-Bot status
-  const [cookieInfo, setCookieInfo] = useState({ exists: false, size: 0 });
-  const [showCookieModal, setShowCookieModal] = useState(false);
-  const [cookieModalVisible, setCookieModalVisible] = useState(false);
-  const [cookieText, setCookieText] = useState('');
-  const [isSavingCookies, setIsSavingCookies] = useState(false);
-  const [cookieStatusMsg, setCookieStatusMsg] = useState('');
+  // Cookies / Anti-Bot status (stored in IndexedDB per-browser)
+  const {
+    cookieText,
+    setCookieText,
+    cookieInfo,
+    save: saveCookies,
+    remove: deleteCookies,
+    getCookieContent
+  } = useCookies();
 
   // Cross-device QR Modal
   const [showQrModal, setShowQrModal] = useState(false);
   const [qrModalVisible, setQrModalVisible] = useState(false);
   const [qrData, setQrData] = useState(null);
 
-  // Fetch cookie status
-  const fetchCookieStatus = useCallback(() => {
-    fetchJson('/api/cookies')
-      .then(data => setCookieInfo(data))
-      .catch(err => console.error('Gagal mengambil status cookies:', err));
-  }, []);
+  const [showCookieModal, setShowCookieModal] = useState(false);
+  const [cookieModalVisible, setCookieModalVisible] = useState(false);
+  const [isSavingCookies, setIsSavingCookies] = useState(false);
+  const [cookieStatusMsg, setCookieStatusMsg] = useState('');
 
   // Fetch network info on mount
   useEffect(() => {
     fetchJson('/api/network-info')
       .then(data => setNetworkInfo(data))
       .catch(err => console.error('Gagal mengambil info jaringan:', err));
-
-    fetchCookieStatus();
-  }, [fetchCookieStatus]);
+  }, []);
 
   const openCookieModal = useCallback(() => {
     setCookieStatusMsg('');
@@ -76,38 +76,29 @@ function App() {
     setIsSavingCookies(true);
     setCookieStatusMsg('');
     try {
-      const json = await fetchJson('/api/cookies', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: cookieText.trim() })
-      });
-      if (json.success) {
-        setCookieStatusMsg('✅ Cookies berhasil disimpan di server!');
-        setCookieText('');
-        fetchCookieStatus();
+      const result = await saveCookies(cookieText);
+      if (result.success) {
+        setCookieStatusMsg('✅ Cookies berhasil disimpan di browser!');
       } else {
-        setCookieStatusMsg('❌ Gagal: ' + json.error);
+        setCookieStatusMsg('❌ Gagal: ' + result.error);
       }
     } catch (err) {
       setCookieStatusMsg('❌ Gagal menyimpan cookies: ' + err.message);
     } finally {
       setIsSavingCookies(false);
     }
-  }, [cookieText, fetchCookieStatus]);
+   }, [cookieText, saveCookies]);
 
   const handleDeleteCookies = useCallback(async () => {
     try {
-      const json = await fetchJson('/api/cookies', { method: 'DELETE' });
-      if (json.success) {
-        setCookieStatusMsg('🗑️ Cookies berhasil dihapus.');
-        fetchCookieStatus();
-      }
+      await deleteCookies();
+      setCookieStatusMsg('🗑️ Cookies berhasil dihapus.');
     } catch (err) {
       setCookieStatusMsg('❌ Gagal menghapus cookies: ' + err.message);
     }
-  }, [fetchCookieStatus]);
+  }, [deleteCookies]);
 
-  const handleCookieFileUpload = useCallback((e) => {
+   const handleCookieFileUpload = useCallback((e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
@@ -115,7 +106,7 @@ function App() {
       setCookieText(event.target.result);
     };
     reader.readAsText(file);
-  }, []);
+  }, [setCookieText]);
 
   // Auto scroll to top on route change
   const location = useLocation();
@@ -139,15 +130,17 @@ function App() {
           <Route
             path="/"
             element={(
-              <MainPage
-                openQrModal={openQrModal}
-                onQrDataFetched={onQrDataFetched}
-                onOpenCookieModal={openCookieModal}
-              />
-            )}
-          />
-          <Route path="terms" element={<TermsPage />} />
-          <Route path="faq" element={<FaqPage />} />
+           <MainPage
+                 openQrModal={openQrModal}
+                 onQrDataFetched={onQrDataFetched}
+                 onOpenCookieModal={openCookieModal}
+                 getCookieContent={getCookieContent}
+               />
+             )}
+           />
+           <Route path="terms" element={<TermsPage />} />
+            <Route path="faq" element={<FaqPage />} />
+           <Route path="posts" element={<PostsPage openQrModal={openQrModal} onQrDataFetched={onQrDataFetched} getCookieContent={getCookieContent} />} />
         </Routes>
       </div>
 
