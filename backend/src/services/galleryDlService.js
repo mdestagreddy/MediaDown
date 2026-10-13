@@ -73,7 +73,9 @@ function parseMediaJson(output) {
     let mediaUrl;
     if (Array.isArray(parsed)) {
       if (parsed[0] === 1) {
-        // Metadata entry: [1, metadata]
+        // Directory entry: [1, directory_name] - skip
+      } else if (parsed[0] === 2) {
+        // Metadata entry: [2, metadata]
         postMetadata = parsed[1] || {};
       } else if (parsed[0] === 3 && typeof parsed[1] === 'string') {
         // File entry: [3, url, metadata]
@@ -276,7 +278,7 @@ async function downloadPostMedia({
       args.push('-O', `format=${imageFormat}`);
     }
 
-    // Filename template - convert yt-dlp template to gallery-dl format
+     // Filename template - convert yt-dlp template to gallery-dl format
     if (outputTemplate) {
       const galleryDlTemplate = outputTemplate
         .replace(/%\(title\)\.120s/g, '{title:.120}')
@@ -284,10 +286,12 @@ async function downloadPostMedia({
         .replace(/%\(id\)s/g, '{id}')
         .replace(/%\(ext\)s/g, '{ext}')
         .replace(/%\(uploader\)s/g, '{uploader}')
+        .replace(/%\(extractor\)s/g, '{extractor_key}')
+        .replace(/%\(extractor_key\)s/g, '{extractor_key}')
         .replace(/%\(playlist_index\)s/g, '{num}');
       args.push('-o', `filename=${galleryDlTemplate}`);
     } else {
-      args.push('-o', 'filename={title}_{num}.{ext}');
+      args.push('-o', 'filename={title:.120} [{extractor_key}, {id}].{ext}');
     }
 
     args.push(url);

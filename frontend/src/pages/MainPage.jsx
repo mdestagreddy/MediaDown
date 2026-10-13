@@ -55,7 +55,7 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal, getCookieCo
   // Track if media is audio-only (no video streams available)
   const [isAudioOnly, setIsAudioOnly] = useState(false);
 
-  const DEFAULT_OUTPUT_TEMPLATE = '%(title).120s [%(id)s].%(ext)s';
+  const DEFAULT_OUTPUT_TEMPLATE = '%(title).120s [%(extractor_key)s, %(id)s].%(ext)s';
   const [outputTemplate, setOutputTemplate] = useState(() => {
     if (typeof localStorage !== 'undefined') {
       const stored = localStorage.getItem('outputTemplate');
@@ -472,7 +472,7 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal, getCookieCo
     }
   };
 
-  const handleClientDownload = () => {
+  const handleClientDownload = async () => {
     if (!activeTask || !activeTask.id) return;
 
     const isPlaylist = activeTask.mode === 'playlist' && activeTask.playlistFiles?.length > 0;
@@ -489,14 +489,19 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal, getCookieCo
       a.click();
       document.body.removeChild(a);
     } else {
-      const downloadUrl = `/api/download/file/${activeTask.id}`;
+      try {
+        const tokenJson = await fetchJson(`/api/token/${activeTask.id}`);
+        const downloadUrl = tokenJson.success ? tokenJson.downloadUrl : `/api/download/file/${activeTask.id}`;
 
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.setAttribute('download', activeTask.fileName || 'media');
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.setAttribute('download', activeTask.fileName || 'media');
+        document.body.appendChild(a);
+        a.click();
+         document.body.removeChild(a);
+      } catch (err) {
+        console.error('Failed to get download token:', err.message);
+      }
     }
   };
 

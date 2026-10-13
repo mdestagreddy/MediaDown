@@ -69,10 +69,10 @@ const PostsPage = ({ openQrModal, onQrDataFetched, getCookieContent }) => {
         const allItems = postsJson.data.mediaItems;
         const postDetails = postsJson.data.postDetails || {};
         setMediaInfo({
-          id: 'gallery',
+          id: postDetails.tweetId || postDetails.id || 'gallery',
           title: postDetails.content || t('main.galleryTitle'),
           thumbnail: firstImage?.url || allItems[0]?.url || '',
-          extractor: 'gallery-dl',
+          extractor: postDetails.category ? postDetails.category.charAt(0).toUpperCase() + postDetails.category.slice(1) : 'gallery-dl',
           webpage_url: url.trim(),
           duration: 0,
           durationFormatted: '',
@@ -175,17 +175,36 @@ const PostsPage = ({ openQrModal, onQrDataFetched, getCookieContent }) => {
     }
   };
 
-  const handleClientDownload = () => {
+  const handleClientDownload = async () => {
     if (!activeTask || !activeTask.id) return;
 
-    const downloadUrl = `/api/download/file/${activeTask.id}`;
+    const isPlaylist = activeTask.mode === 'playlist' && activeTask.playlistFiles?.length > 0;
 
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.setAttribute('download', activeTask.fileName || 'media');
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    if (isPlaylist) {
+      const downloadUrl = `/api/download/playlist/${activeTask.id}`;
+      const zipName = `${activeTask.fileName || 'playlist'}.zip`;
+
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.setAttribute('download', zipName);
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      try {
+        const tokenJson = await fetchJson(`/api/token/${activeTask.id}`);
+        const downloadUrl = tokenJson.success ? tokenJson.downloadUrl : `/api/download/file/${activeTask.id}`;
+
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.setAttribute('download', activeTask.fileName || 'media');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch (err) {
+        console.error('Failed to get download token:', err.message);
+      }
+    }
   };
 
   const handleDeleteFromServer = async () => {
@@ -243,6 +262,8 @@ const PostsPage = ({ openQrModal, onQrDataFetched, getCookieContent }) => {
       {mediaInfo && (
         <PostsMediaBox
           mediaInfo={mediaInfo}
+          openQrModal={openQrModal}
+          onQrDataFetched={onQrDataFetched}
         />
       )}
 

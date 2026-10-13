@@ -13,6 +13,34 @@ const { getImageInfo, downloadPostMedia } = require('./services/galleryDlService
 const taskManager = require('./services/taskManager');
 const { getLocalIp } = require('./utils/network');
 
+const TOKEN_EXPIRY_MS = 15 * 60 * 1000;
+const tokenStore = new Map();
+
+function generateToken() {
+  const ts = Date.now();
+  const randomPart = crypto.randomBytes(16).toString('hex');
+  const token = `${ts}.${randomPart}`;
+  tokenStore.set(token, { createdAt: ts });
+  setTimeout(() => tokenStore.delete(token), TOKEN_EXPIRY_MS);
+  return token;
+}
+
+function validateToken(token) {
+  if (!token || typeof token !== 'string') return false;
+  const entry = tokenStore.get(token);
+  if (!entry) return false;
+  if (Date.now() - entry.createdAt >= TOKEN_EXPIRY_MS) {
+    tokenStore.delete(token);
+    return false;
+  }
+  return true;
+}
+
+function consumeToken(token) {
+  if (!token || typeof token !== 'string') return false;
+  return tokenStore.delete(token);
+}
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -137,7 +165,7 @@ app.post('/api/posts-info', async (req, res) => {
   }
 
   try {
-    const info = await getImageInfo(url.trim(), cookies, task.taskDir);
+    const info = await getImageInfo(url.trim(), cookies);
     res.json({ success: true, data: info });
   } catch (err) {
     console.error('[Image Info Error]', err.message);
@@ -202,9 +230,13 @@ function parseCookiesFile(filePath, targetDomain) {
 }
 
 app.get('/api/media-proxy', async (req, res) => {
-  const { url: mediaUrl, filename, cookies: cookiesParam } = req.query;
+  const { url: mediaUrl, filename, cookies: cookiesParam, token } = req.query;
   if (!mediaUrl || typeof mediaUrl !== 'string') {
     return res.status(400).json({ error: 'URL parameter is required.' });
+  }
+
+  if (!validateToken(token)) {
+    return res.status(403).json({ error: 'Token tidak valid atau sudah kadaluarsa.' });
   }
 
   let currentUrl = mediaUrl;
@@ -268,7 +300,6 @@ app.get('/api/media-proxy', async (req, res) => {
       downloadName = downloadName
         .replace(/[\r\n\t\x00-\x1f\x7f]/g, ' ')
         .replace(/[^\x20-\x7e]/g, '')
-        .replace(/\s+/g, '_')
         .trim();
 
       // Ensure we have a valid extension
@@ -470,6 +501,17 @@ app.get('/api/tasks/:taskId/events', (req, res) => {
   taskManager.subscribe(taskId, res);
 });
 
+// Generate a download token for a valid task (15-minute expiry)
+app.get('/api/token/:taskId', (req, res) => {
+  const { taskId } = req.params;
+  const task = taskManager.getTask(taskId);
+  if (!task) {
+    return res.status(404).json({ error: 'Tugas tidak ditemukan.' });
+  }
+  const token = generateToken();
+  res.json({ success: true, token, downloadUrl: `/api/download/file/${taskId}?token=${token}` });
+});
+
 // Queue status endpoint
 app.get('/api/queue', (req, res) => {
   res.json({
@@ -482,6 +524,10 @@ app.get('/api/queue', (req, res) => {
 // Automatically deletes file from server once client finishes downloading!
 app.get('/api/download/file/:taskId', (req, res) => {
   const { taskId } = req.params;
+  const { token } = req.query;
+  if (!validateToken(token)) {
+    return res.status(403).send('Token tidak valid atau sudah kadaluarsa.');
+  }
   const task = taskManager.getTask(taskId);
 
   if (!task) {
@@ -539,6 +585,10 @@ app.get('/api/download/file/:taskId', (req, res) => {
 // Download specific file from a playlist task
 app.get('/api/download/file/:taskId/:filename', (req, res) => {
   const { taskId, filename } = req.params;
+  const { token } = req.query;
+  if (!validateToken(token)) {
+    return res.status(403).send('Token tidak valid atau sudah kadaluarsa.');
+  }
   const task = taskManager.getTask(taskId);
 
   if (!task) {
@@ -736,7 +786,42 @@ function servePreview(req, res, filename) {
 app.get('/api/preview/:taskId', (req, res) => servePreview(req, res, null));
 app.get('/api/preview/:taskId/:filename', (req, res) => servePreview(req, res, req.params.filename));
 
+// Generate QR code for any URL (used by carousel download dialog)
+app.get('/api/qrcode/url', async (req, res) => {
+  const { url: targetUrl } = req.query;
+  if (!targetUrl || typeof targetUrl !== 'string') {
+    return res.status(400).json({ error: 'URL parameter is required.' });
+  }
+
+  // Prefix relative URLs with local IP so QR codes are scannable on mobile
+  let absoluteUrl = targetUrl;
+  if (targetUrl.startsWith('/')) {
+    const localIp = getLocalIp();
+    absoluteUrl = `http://${localIp}:${PORT}${targetUrl}`;
+  }
+
+  // Append security token (valid 15 minutes)
+  const token = generateToken();
+  const separator = absoluteUrl.includes('?') ? '&' : '?';
+  absoluteUrl += `${separator}token=${token}`;
+
+  try {
+    const qrDataUrl = await QRCode.toDataURL(absoluteUrl, {
+      width: 320,
+      margin: 2,
+      color: {
+        dark: '#0f172a',
+        light: '#ffffff'
+      }
+    });
+    res.json({ success: true, qrDataUrl, downloadUrl: absoluteUrl });
+  } catch (err) {
+    res.status(500).json({ error: 'Gagal membuat QR Code.' });
+  }
+});
+
 // Generate QR Code for downloading from mobile device on the same local network
+// NOTE: /api/qrcode/url must be defined before /:taskId to avoid route collision
 app.get('/api/qrcode/:taskId', async (req, res) => {
   const { taskId } = req.params;
   const task = taskManager.getTask(taskId);
@@ -760,6 +845,11 @@ app.get('/api/qrcode/:taskId', async (req, res) => {
     directDownloadUrl = `${baseUrl}/api/download/file/${taskId}`;
   }
 
+  // Append security token (valid 15 minutes)
+  const token = generateToken();
+  const separator = directDownloadUrl.includes('?') ? '&' : '?';
+  directDownloadUrl += `${separator}token=${token}`;
+
   try {
     const qrDataUrl = await QRCode.toDataURL(directDownloadUrl, {
       width: 320,
@@ -775,7 +865,7 @@ app.get('/api/qrcode/:taskId', async (req, res) => {
       qrDataUrl,
       downloadUrl: directDownloadUrl,
       isPlaylist,
-      playlistFiles: task.playlistFiles || []
+       playlistFiles: task.playlistFiles || []
     });
   } catch (err) {
     res.status(500).json({ error: 'Gagal membuat QR Code.' });

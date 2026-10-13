@@ -48,10 +48,11 @@ Dirancang khusus untuk melampaui website downloader pihak ketiga yang sering rus
     - Dilengkapi pembersih berkala (sweeper) untuk menghapus file yang tidak diunduh setelah 15 menit.
 
 6. **Frontend Modern & Responsif**:
-    - Desain gelap berkelas (*Cyber-Dark Glassmorphic*), animasi transisi mulus, indikator progress real-time (persen, kecepatan unduh, estimasi sisa waktu via Server-Sent Events).
+    - Desain gelap berkelas (*Cyber-Dark Glassmorphic*), animasi transisi mulus, indikator progress real-time (persah, kecepatan unduh, estimasi sisa waktu via Server-Sent Events).
     - Tampilan log terminal lengkap di bawah progress card — meliputi semua output yt-dlp/gallery-dl (URL, kecepatan, status FFmpeg muxing) dengan auto-scroll ke entri terbaru.
-    - Informasi progres byte-level (`15.2 MB / 33.4 MB`) untuk unduhan video/audio, dan hitungan file (`3/10`) untuk galeri gambar.
+    - Informasi progres byte-level (`15.2 MB / 33.4 MB`) untuk undukan video/audio, dan hitungan file (`3/10`) untuk galeri gambar.
     - Nyaman digunakan baik di layar HP, tablet, maupun desktop PC.
+    - **React Lazy Loading (Code Splitting)**: halaman `/posts`, `/terms`, `/faq`, serta modal *QR* dan *Cookie* dimuat secara dinamis (lazy) hanya saat dibutuhkan, mengurangi ukuran bundle awal sebesar ~20 KB.
     - **Tema Terang/Gelap otomatis**: mendeteksi preferensi perangkat (`prefers-color-scheme`). Toggle manual via ikon di header (Auto ↔ Terang ↔ Gelap), pilihan tersimpan di *localStorage*.
     - **Multi-Language Support (i18n)** dilengkapi di bawah.
 

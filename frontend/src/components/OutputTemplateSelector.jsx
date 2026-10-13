@@ -4,7 +4,7 @@ import './OutputTemplateSelector.css';
 import useLocale from '../hooks/useLocale';
 
 const PRESETS = [
-  { value: '%(title).120s [%(id)s].%(ext)s', label: 'Title [ID] (Default)' },
+  { value: '%(title).120s [%(extractor_key)s, %(id)s].%(ext)s', label: 'Title [Platform, ID] (Default)' },
   { value: '%(title)s.%(ext)s', label: 'Title Only' },
   { value: '%(uploader)s - %(title)s.%(ext)s', label: 'Uploader - Title' },
   { value: '%(uploader)s/%(title)s.%(ext)s', label: 'Uploader / Title (Folder)' },

@@ -1,17 +1,18 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
-import QrModal from './components/QrModal';
-import CookieModal from './components/CookieModal';
 import MainPage from './pages/MainPage';
-import PostsPage from './pages/PostsPage';
-import TermsPage from './pages/Terms';
-import FaqPage from './pages/Faq';
 import { useTheme } from './hooks/useTheme';
 import { fetchJson } from './utils/api';
 import LocaleProvider from './contexts/LocaleProvider';
 import useCookies from './hooks/useCookies';
+
+const PostsPage = lazy(() => import('./pages/PostsPage'));
+const TermsPage = lazy(() => import('./pages/Terms'));
+const FaqPage = lazy(() => import('./pages/Faq'));
+const QrModal = lazy(() => import('./components/QrModal'));
+const CookieModal = lazy(() => import('./components/CookieModal'));
 
 function App() {
   const { theme, resolvedTheme, toggleTheme } = useTheme();
@@ -126,53 +127,59 @@ function App() {
           onToggleTheme={toggleTheme}
         />
 
-        <Routes>
-          <Route
-            path="/"
-            element={(
-           <MainPage
-                 openQrModal={openQrModal}
-                 onQrDataFetched={onQrDataFetched}
-                 onOpenCookieModal={openCookieModal}
-                 getCookieContent={getCookieContent}
-               />
+        <Suspense>
+          <Routes>
+            <Route
+              path="/"
+              element={(
+             <MainPage
+                  openQrModal={openQrModal}
+                  onQrDataFetched={onQrDataFetched}
+                  onOpenCookieModal={openCookieModal}
+                  getCookieContent={getCookieContent}
+                />
              )}
-           />
-           <Route path="terms" element={<TermsPage />} />
+            />
+             <Route path="terms" element={<TermsPage />} />
             <Route path="faq" element={<FaqPage />} />
-           <Route path="posts" element={<PostsPage openQrModal={openQrModal} onQrDataFetched={onQrDataFetched} getCookieContent={getCookieContent} />} />
-        </Routes>
+            <Route path="posts" element={<PostsPage openQrModal={openQrModal} onQrDataFetched={onQrDataFetched} getCookieContent={getCookieContent} />} />
+          </Routes>
+        </Suspense>
       </div>
 
       {/* Cross-Device QR Code Modal (global, available on all pages) */}
       {showQrModal && (
-        <QrModal
-          qrData={qrData}
-          networkInfo={networkInfo}
-          visible={qrModalVisible}
-          onClose={closeQrModal}
-        />
+        <Suspense>
+          <QrModal
+            qrData={qrData}
+            networkInfo={networkInfo}
+            visible={qrModalVisible}
+            onClose={closeQrModal}
+          />
+        </Suspense>
       )}
 
       {/* Anti-Bot & Cookies Settings Modal (global, available on all pages) */}
       {showCookieModal && (
-        <CookieModal
-          cookieInfo={cookieInfo}
-          cookieText={cookieText}
-          setCookieText={setCookieText}
-          isSavingCookies={isSavingCookies}
-          cookieStatusMsg={cookieStatusMsg}
-          onSave={handleSaveCookies}
-          onDelete={handleDeleteCookies}
-          onFileUpload={handleCookieFileUpload}
-          visible={cookieModalVisible}
-          onClose={closeCookieModal}
-        />
+        <Suspense>
+          <CookieModal
+            cookieInfo={cookieInfo}
+            cookieText={cookieText}
+            setCookieText={setCookieText}
+            isSavingCookies={isSavingCookies}
+            cookieStatusMsg={cookieStatusMsg}
+            onSave={handleSaveCookies}
+            onDelete={handleDeleteCookies}
+            onFileUpload={handleCookieFileUpload}
+            visible={cookieModalVisible}
+            onClose={closeCookieModal}
+          />
+        </Suspense>
       )}
 
       <Footer />
       </LocaleProvider>
-    );
+  );
 }
 
 export default App;

@@ -1,20 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
-import { Film, Download } from 'lucide-react';
+import { Film, Download, Laptop, Smartphone, X } from 'lucide-react';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import useCookies from '../hooks/useCookies';
+import { fetchJson } from '../utils/api';
 import './MediaCarousel.css';
 
-const MediaCarousel = ({ mediaItems, platform, postId }) => {
+const MediaCarousel = ({ mediaItems, platform, postId, openQrModal, onQrDataFetched }) => {
   const { getCookieContent } = useCookies();
-  const [proxyCookies, setProxyCookies] = useState(null);
+  const proxyCookies = getCookieContent();
 
-  useEffect(() => {
-    getCookieContent().then(c => setProxyCookies(c));
-  }, [getCookieContent]);
+  const [dialogItem, setDialogItem] = useState(null);
+  const [loadingQr, setLoadingQr] = useState(false);
 
   if (!mediaItems || mediaItems.length === 0) return null;
 
@@ -32,12 +32,56 @@ const MediaCarousel = ({ mediaItems, platform, postId }) => {
     const title = String(item.title || 'media')
       .replace(/[\r\n\t]/g, ' ')
       .replace(/[^\x20-\x7e]/g, '')
-      .replace(/\s+/g, '_')
+      .replace(/[<>:"/\\|?*]/g, '_')
       .trim()
       .substring(0, 40);
     const platformSuffix = (platform || item.platform || 'media').substring(0, 20);
     const idSuffix = (postId || item.postId || (index + 1)).toString().substring(0, 20);
-    return `${title} [${platformSuffix}, ${idSuffix}].${ext}`;
+     return `${title} [${platformSuffix}, ${idSuffix}].${ext}`;
+  };
+
+  const openDialog = (item, i) => {
+    setDialogItem({ ...item, index: i });
+  };
+
+  const closeDialog = () => {
+    setDialogItem(null);
+  };
+
+  const handleDirectDownload = (item, i) => {
+    const downloadUrl = buildProxyUrl(item.url) + `&filename=${encodeURIComponent(generateFilename(item, i))}`;
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.setAttribute('download', generateFilename(item, i));
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    closeDialog();
+  };
+
+  const handleQrCode = async (item, i) => {
+    setLoadingQr(true);
+    const generatedFileName = generateFilename(item, i);
+    const targetUrl = buildProxyUrl(item.url) + `&filename=${encodeURIComponent(generatedFileName)}`;
+    try {
+      const json = await fetchJson(`/api/qrcode/url?${new URLSearchParams({ url: targetUrl })}`);
+      if (json.success) {
+        if (openQrModal && onQrDataFetched) {
+          onQrDataFetched({
+            qrDataUrl: json.qrDataUrl,
+            downloadUrl: json.downloadUrl,
+            isPlaylist: false,
+            fileName: generatedFileName
+          });
+          openQrModal();
+          closeDialog();
+        }
+      }
+    } catch (err) {
+      console.error('Gagal membuat QR code:', err.message);
+    } finally {
+      setLoadingQr(false);
+    }
   };
 
   const displayItems = mediaItems;
@@ -53,7 +97,7 @@ const MediaCarousel = ({ mediaItems, platform, postId }) => {
         className="media-carousel"
       >
         {displayItems.map((item, i) => (
-          <SwiperSlide key={item.id || i}>
+          <SwiperSlide key={`${item.id || item.url || i}_${i}`}>
             <div className="carousel-slide">
               <div className="carousel-media-wrap">
                 {item.type === 'video' ? (
@@ -85,14 +129,14 @@ const MediaCarousel = ({ mediaItems, platform, postId }) => {
                 {item.ext && item.type !== 'video' && (
                   <div className="carousel-ext-badge">{item.ext.toUpperCase()}</div>
                 )}
-                <a
-                  href={buildProxyUrl(item.url) + `&filename=${encodeURIComponent(generateFilename(item, i))}`}
-                  download
+                <button
+                  type="button"
                   className="carousel-download-btn"
                   title="Download"
+                  onClick={() => openDialog(item, i)}
                 >
                   <Download size={16} />
-                </a>
+                </button>
               </div>
               <div className="carousel-caption">
                 <span className="carousel-media-index">
@@ -104,6 +148,38 @@ const MediaCarousel = ({ mediaItems, platform, postId }) => {
           </SwiperSlide>
         ))}
       </Swiper>
+
+      {dialogItem && (
+        <div className="carousel-download-dialog-overlay" onClick={closeDialog}>
+          <div className="carousel-download-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="carousel-dialog-header">
+              <span className="carousel-dialog-title">Download</span>
+              <button type="button" className="carousel-dialog-close" onClick={closeDialog}>
+                <X size={16} />
+              </button>
+            </div>
+            <div className="carousel-dialog-options">
+              <button
+                type="button"
+                className="carousel-dialog-option"
+                onClick={() => handleDirectDownload(dialogItem, dialogItem.index)}
+              >
+                <Laptop size={18} />
+                <span>Download ke perangkat ini</span>
+              </button>
+              <button
+                type="button"
+                className="carousel-dialog-option"
+                onClick={() => handleQrCode(dialogItem, dialogItem.index)}
+                disabled={loadingQr}
+              >
+                <Smartphone size={18} />
+                <span>{loadingQr ? 'Menyiapkan...' : 'Via QR Code'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

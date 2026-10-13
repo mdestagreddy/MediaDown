@@ -2,6 +2,7 @@ import { FileCheck, Laptop, Smartphone, ShieldCheck, Download, PlayCircle, FileT
 import { useMemo } from 'react';
 import './ReadyBox.css';
 import useLocale from '../hooks/useLocale';
+import { fetchJson } from '../utils/api';
 
 const getPreviewType = (fileName, mode) => {
   if (mode === 'audio') return 'audio';
@@ -37,9 +38,10 @@ const ReadyBox = ({ task, onClientDownload, onOpenQrModal, onDeleteFromServer })
     return `/api/preview/${task.id}`;
   }, [task, isPlaylist]);
 
-  const handleIndividualDownload = (fileName) => {
+  const handleIndividualDownload = async (fileName) => {
     const encodedName = encodeURIComponent(fileName);
-    const downloadUrl = `/api/download/file/${task.id}/${encodedName}`;
+    const tokenJson = await fetchJson(`/api/token/${task.id}`);
+    const downloadUrl = tokenJson.success ? `/api/download/file/${task.id}/${encodedName}?token=${tokenJson.token}` : `/api/download/file/${task.id}/${encodedName}`;
     const a = document.createElement('a');
     a.href = downloadUrl;
     a.setAttribute('download', fileName);
@@ -78,6 +80,7 @@ const ReadyBox = ({ task, onClientDownload, onOpenQrModal, onDeleteFromServer })
               key={previewUrl}
               src={previewUrl}
               controls
+              controlsList="nodownload"
               preload="metadata"
               className="preview-media"
             >

@@ -10,7 +10,7 @@ const formatViewCount = (count) => {
   return count.toLocaleString();
 };
 
-const MediaPreview = ({ mediaInfo, showThumbnails = false }) => {
+const MediaPreview = ({ mediaInfo, showThumbnails = false, openQrModal, onQrDataFetched }) => {
   const { t } = useLocale();
   const views = formatViewCount(mediaInfo?.view_count);
   const allThumbs = mediaInfo?.thumbnails || [];
@@ -51,7 +51,13 @@ const MediaPreview = ({ mediaInfo, showThumbnails = false }) => {
       )}
 
       {carouselItems && (
-        <MediaCarousel mediaItems={carouselItems} />
+        <MediaCarousel
+          mediaItems={carouselItems}
+          platform={mediaInfo.extractor}
+          postId={mediaInfo.id}
+          openQrModal={openQrModal}
+          onQrDataFetched={onQrDataFetched}
+        />
       )}
 
       <div className="media-details">
