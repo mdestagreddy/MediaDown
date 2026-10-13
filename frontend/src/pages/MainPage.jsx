@@ -191,8 +191,8 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal, getCookieCo
           setSelectedPlaylistItems([]);
 
           const hasVideo = infoResult.videoFormats && infoResult.videoFormats.length > 0;
-          const hasAudioFormats = infoResult.allVideoFormats && infoResult.allVideoFormats.length > 0;
-          const audioOnly = !hasVideo && !hasAudioFormats;
+          const hasAudio = infoResult.audioFormats && infoResult.audioFormats.length > 0;
+          const audioOnly = !hasVideo && hasAudio;
           setIsAudioOnly(audioOnly);
 
           if (mode === 'image' && infoResult.thumbnails && infoResult.thumbnails.length > 0) {
@@ -230,6 +230,7 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal, getCookieCo
           } else if (audioOnly) {
             setMode('audio');
           } else {
+            setMode('video');
             if (infoResult.videoFormats && infoResult.videoFormats.length > 0) {
               updateVideoSetting('selectedVideoFormat', infoResult.videoFormats[0].format_id);
             } else {
