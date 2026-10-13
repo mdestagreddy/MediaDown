@@ -90,16 +90,23 @@ Dirancang khusus untuk melampaui website downloader pihak ketiga yang sering rus
     - Cookies disimpan langsung di browser pengguna via **IndexedDB** (nama database: `MediaDownDB`, store: `cookies`), bukan di server.
     - Setiap browser/perangkat menyimpan cookies-nya sendiri — tidak ada berbagi cookies antar pengguna.
     - Cookies dikirimkan ke backend sebagai string pada setiap request (`/api/info`, `/api/posts-info`, `/api/download`, `/api/media-proxy`).
-    - Backend menulis cookies ke file temp sementara (`os.tmpdir()`) untuk proses yt-dlp/gallery-dl, lalu menghapusnya otomatis setelah selesai.
+    - Backend menulis cookies ke **folder task** (`{taskDir}/cookies.txt`) untuk proses yt-dlp/gallery-dl, lalu menghapusnya otomatis bersama task cleanup.
     - Untuk `/api/media-proxy`, cookies diterima via query parameter (dengan batas ukuran 6KB untuk menghindari URL yang terlalu panjang).
+
+15. **YouTube Playlist Fast Analyze**:
+    - Untuk URL YouTube, analisis playlist menggunakan `--flat-playlist` yang jauh lebih cepat dibandingkan `--yes-playlist`.
+    - `--flat-playlist` hanya mengekstrak metadata dasar (id, judul, URL, thumbnail, durasi) tanpa mengunduh daftar format lengkap untuk setiap entri.
+    - Format lengkap (stream video/audio) diekstraksi hanya pada entri yang benar-benuh dipilih untuk diunduh.
+    - Platform lain tetap menggunakan `--yes-playlist` untuk kompatibilitas penuh.
 
 15. **Manual Server File Deletion**:
     - Tombol "Hapus File dari Server Sekarang" di *Ready Box* memungkinkan hapus manual file.
     - File otomatis dihapus setelah unduh berhasil (auto-cleanup).
 
 16. **Playlist Metadata & Quality Selection**:
-    - Ekstraksi metadata penuh untuk setiap item playlist (judul, artis/uploader, durasi, cover/artwork) pada platform seperti SoundCloud, YouTube Music, dan lainnya.
-    - Menggunakan `--yes-playlist` dengan `--playlist-end 100` untuk mengambil hingga 100 item pertama dengan metadata lengkap.
+    - Metadata playlist diekstrak untuk setiap item (judul, artis/uploader, durasi, cover/artwork) pada platform seperti SoundCloud, YouTube Music, dan lainnya.
+    - Untuk platform non-YouTube, `--yes-playlist` digunakan dengan `--playlist-end 100` untuk mengambil hingga 100 item pertama.
+    - Untuk YouTube, `--flat-playlist` digunakan untuk analisis yang lebih cepat.
     - Pemilihan kualitas untuk playlist: pilih mode unduh (Video + Audio atau Audio Only) dan kualitas (Best, High, Medium, Low) sebelum memulai unduh.
     - Toggle "Sertakan Metadata & Cover Art" tersedia di mode playlist (Audio Only) untuk format MP3/M4A/FLAC.
     - Auto-detect: jika konten hanya audio (mis. SoundCloud), tab "Video + Audio" otomatis disembunyikan.

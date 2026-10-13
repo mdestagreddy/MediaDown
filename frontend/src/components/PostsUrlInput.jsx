@@ -75,11 +75,6 @@ const PostsUrlInput = ({
         </div>
       </form>
 
-      <div className="posts-engine-badge">
-        <Image size={12} />
-        <span>{t('main.engineGallery')}</span>
-      </div>
-
       {errorMessage && (
         <div className="error-banner fl-between gap-12 flex-wrap">
           <div className="fl-row gap-10">

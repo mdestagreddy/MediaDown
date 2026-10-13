@@ -129,7 +129,7 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal, getCookieCo
     try {
       let infoResult = null;
       try {
-         const cookies = getCookieContent ? await getCookieContent() : null;
+       const cookies = getCookieContent ? getCookieContent() : null;
          const infoJson = await fetchJson('/api/info', {
              method: 'POST',
              headers: { 'Content-Type': 'application/json' },

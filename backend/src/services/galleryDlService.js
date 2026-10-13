@@ -3,10 +3,10 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-function writeTempCookies(cookies) {
+function writeTempCookies(cookies, taskDir) {
   if (!cookies || !cookies.trim()) return null;
-  const tmpDir = os.tmpdir();
-  const tmpFile = path.join(tmpDir, `cookies_${Date.now()}_${Math.random().toString(36).slice(2)}.txt`);
+  const dir = taskDir || os.tmpdir();
+  const tmpFile = path.join(dir, 'cookies.txt');
   fs.writeFileSync(tmpFile, cookies.trim(), 'utf8');
   return tmpFile;
 }
@@ -16,12 +16,12 @@ function cleanupTempCookies(filePath) {
   try { fs.unlinkSync(filePath); } catch {}
 }
 
-function getAntiBotArgs(cookies) {
+function getAntiBotArgs(cookies, taskDir) {
   const args = [];
   let tempCookiesPath = null;
 
   if (cookies && typeof cookies === 'string' && cookies.trim()) {
-    tempCookiesPath = writeTempCookies(cookies);
+    tempCookiesPath = writeTempCookies(cookies, taskDir);
     if (tempCookiesPath) {
       args.push('--cookies', tempCookiesPath);
     }
@@ -172,9 +172,9 @@ function parseMediaJson(output) {
 /**
  * Get media info for posts/stories via gallery-dl
  */
-async function getImageInfo(url, cookies) {
+async function getImageInfo(url, cookies, taskDir) {
   return new Promise((resolve, reject) => {
-    const { args: antiBotArgs, tempCookiesPath } = getAntiBotArgs(cookies);
+    const { args: antiBotArgs, tempCookiesPath } = getAntiBotArgs(cookies, taskDir);
     const args = [
       '-q',
       '-j',
@@ -255,11 +255,12 @@ async function downloadPostMedia({
   totalImages = 0,
   outputTemplate,
   cookies,
+  taskDir,
   onProgress,
   onLog
 }) {
   return new Promise((resolve, reject) => {
-    const { args: antiBotArgs, tempCookiesPath } = getAntiBotArgs(cookies);
+    const { args: antiBotArgs, tempCookiesPath } = getAntiBotArgs(cookies, taskDir);
     const args = [
       '-q',
       ...antiBotArgs,

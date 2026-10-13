@@ -103,7 +103,7 @@ app.post('/api/info', async (req, res) => {
     // Check if yt-dlp indicates this is a playlist and retry with playlist mode
     if (!includePlaylist && (err.message.includes('playlist') || err.message.includes('is a private video'))) {
       try {
-        const info = await getMediaInfo(url.trim(), { includePlaylist: true });
+        const info = await getMediaInfo(url.trim(), { includePlaylist: true, cookies });
         res.json({ success: true, data: info });
       } catch (retryErr) {
         console.error('[Info Error]', retryErr.message);
@@ -137,7 +137,7 @@ app.post('/api/posts-info', async (req, res) => {
   }
 
   try {
-    const info = await getImageInfo(url.trim(), cookies);
+    const info = await getImageInfo(url.trim(), cookies, task.taskDir);
     res.json({ success: true, data: info });
   } catch (err) {
     console.error('[Image Info Error]', err.message);
@@ -403,6 +403,7 @@ app.post('/api/download', async (req, res) => {
         totalImages,
         outputTemplate,
         cookies,
+        taskDir: task.taskDir,
         onProgress: progressCallback,
         onLog: (msg) => {
           console.log(`[Task ${taskId}] ${msg}`);
@@ -429,6 +430,7 @@ app.post('/api/download', async (req, res) => {
       playlistItems: playlistItems,
       playlistMode: playlistMode,
       cookies,
+      taskDir: task.taskDir,
       onProgress: progressCallback,
       onLog: (msg) => {
         console.log(`[Task ${taskId}] ${msg}`);

@@ -3,9 +3,10 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-function writeTempCookies(cookies) {
+function writeTempCookies(cookies, taskDir) {
   if (!cookies || !cookies.trim()) return null;
-  const tmpFile = path.join(os.tmpdir(), `cookies_${Date.now()}_${Math.random().toString(36).slice(2)}.txt`);
+  const dir = taskDir || os.tmpdir();
+  const tmpFile = path.join(dir, 'cookies.txt');
   fs.writeFileSync(tmpFile, cookies.trim(), 'utf8');
   return tmpFile;
 }
@@ -15,7 +16,7 @@ function cleanupTempCookies(filePath) {
   try { fs.unlinkSync(filePath); } catch {}
 }
 
-function getAntiBotArgs(cookies) {
+function getAntiBotArgs(cookies, taskDir) {
   const args = [
     '--retries',
     '5',
@@ -25,7 +26,7 @@ function getAntiBotArgs(cookies) {
 
   let tempCookiesPath = null;
   if (cookies && typeof cookies === 'string' && cookies.trim()) {
-    tempCookiesPath = writeTempCookies(cookies);
+    tempCookiesPath = writeTempCookies(cookies, taskDir);
     if (tempCookiesPath) {
       args.push('--cookies', tempCookiesPath);
     }
@@ -39,9 +40,9 @@ function getAntiBotArgs(cookies) {
  */
 async function getMediaInfo(url, options = {}) {
   return new Promise((resolve, reject) => {
-    const { includePlaylist = false, cookies = null } = options;
+    const { includePlaylist = false, cookies = null, taskDir = null } = options;
 
-    const { args: antiBotArgs, tempCookiesPath } = getAntiBotArgs(cookies);
+    const { args: antiBotArgs, tempCookiesPath } = getAntiBotArgs(cookies, taskDir);
     const args = [
       '--dump-single-json',
       '--no-warnings',
@@ -50,11 +51,17 @@ async function getMediaInfo(url, options = {}) {
       url
     ];
 
-    // For playlist, use --yes-playlist to fetch full metadata for each entry
-    // (including title, uploader, thumbnail, duration). Limit to 100 items for
-    // performance. For non-playlist URLs, use --no-playlist to get single video info.
+    // For playlist info extraction, use --flat-playlist for YouTube (much faster)
+    // since we only need basic metadata (id, title, url, thumbnails) for the UI.
+    // Other platforms may need full metadata via --yes-playlist. Full format extraction
+    // happens later only for items actually selected for download.
+    const isYoutube = /youtube\.com|youtu\.be|youtube-nocookie\.com/.test(url);
     if (includePlaylist) {
-      args.push('--yes-playlist');
+      if (isYoutube) {
+        args.push('--flat-playlist');
+      } else {
+        args.push('--yes-playlist');
+      }
       args.push('--playlist-start', '1');
       args.push('--playlist-end', '100');
     } else {
@@ -386,11 +393,12 @@ function downloadMedia({
   playlistDownloadMode = 'video', // 'video' | 'audio' (for playlist mode)
   playlistQuality = 'best', // 'best' | 'high' | 'medium' | 'low' (for playlist mode)
   cookies = null,
+  taskDir = null,
   onProgress,
   onLog
 }) {
   return new Promise((resolve, reject) => {
-    const { args: antiBotArgs, tempCookiesPath } = getAntiBotArgs(cookies);
+    const { args: antiBotArgs, tempCookiesPath } = getAntiBotArgs(cookies, taskDir);
     const outputTemplateFinal = outputTemplate
       ? path.join(outputDir, outputTemplate)
       : path.join(outputDir, '%(title).120s [%(id)s].%(ext)s');

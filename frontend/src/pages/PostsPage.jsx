@@ -57,7 +57,7 @@ const PostsPage = ({ openQrModal, onQrDataFetched, getCookieContent }) => {
     setActiveTask(null);
 
     try {
-      const cookies = getCookieContent ? await getCookieContent() : null;
+      const cookies = getCookieContent ? getCookieContent() : null;
       const postsJson = await fetchJson('/api/posts-info', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
