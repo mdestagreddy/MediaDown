@@ -48,3 +48,61 @@
   align-items: center;
   gap: 8px;
 }
+
+/* Proxy Toggle Section */
+.proxy-toggle-section {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.proxy-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.proxy-toggle-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  cursor: pointer;
+  user-select: none;
+}
+
+.proxy-toggle-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.proxy-desc {
+  line-height: 1.4;
+}
+
+.proxy-status-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.proxy-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-emerald);
+  flex-shrink: 0;
+}
+
+.proxy-loading .proxy-status-dot {
+  background: var(--accent-amber);
+  animation: pulseGlow 1.5s ease-in-out infinite;
+}

@@ -2,6 +2,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const { withProxyRetry } = require('./proxyPool');
 
 function writeTempCookies(cookies, taskDir) {
   if (!cookies || !cookies.trim()) return null;
@@ -174,13 +175,15 @@ function parseMediaJson(output) {
 /**
  * Get media info for posts/stories via gallery-dl
  */
-async function getImageInfo(url, cookies, taskDir) {
-  return new Promise((resolve, reject) => {
+async function getImageInfo(url, cookies, taskDir, useProxy = false) {
+  return withProxyRetry(async (proxy) => {
+    return new Promise((resolve, reject) => {
     const { args: antiBotArgs, tempCookiesPath } = getAntiBotArgs(cookies, taskDir);
     const args = [
       '-q',
       '-j',
       ...antiBotArgs,
+      ...(proxy ? ['--proxy', proxy] : []),
       url
     ];
 
@@ -245,6 +248,7 @@ async function getImageInfo(url, cookies, taskDir) {
       reject(new Error(`gallery-dl tidak dapat dijalankan: ${err.message}`));
     });
   });
+    }, useProxy);
 }
 
 /**
@@ -258,14 +262,17 @@ async function downloadPostMedia({
   outputTemplate,
   cookies,
   taskDir,
+  useProxy = false,
   onProgress,
   onLog
 }) {
-  return new Promise((resolve, reject) => {
+  return withProxyRetry(async (proxy) => {
+    return new Promise((resolve, reject) => {
     const { args: antiBotArgs, tempCookiesPath } = getAntiBotArgs(cookies, taskDir);
     const args = [
       '-q',
       ...antiBotArgs,
+      ...(proxy ? ['--proxy', proxy] : []),
     ];
 
     // Output directory
@@ -396,10 +403,11 @@ async function downloadPostMedia({
       }
     });
 
-    child.on('error', (err) => {
-      reject(new Error(`gallery-dl tidak dapat dijalankan: ${err.message}`));
-    });
+     child.on('error', (err) => {
+       reject(new Error(`gallery-dl tidak dapat dijalankan: ${err.message}`));
+     });
   });
+    }, useProxy);
 }
 
 function formatBytes(bytes) {

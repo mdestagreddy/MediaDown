@@ -24,6 +24,29 @@ const PostsPage = ({ openQrModal, onQrDataFetched, getCookieContent }) => {
   const [activeTask, setActiveTask] = useState(null);
   const sseRef = useRef(null);
 
+  const [useProxy, setUseProxy] = useState(() => {
+    if (typeof localStorage !== 'undefined') {
+      const stored = localStorage.getItem('useProxy');
+      return stored === 'true';
+    }
+    return false;
+  });
+  const [proxyStatus, setProxyStatus] = useState(null);
+
+  const handleUseProxyChange = (enabled) => {
+    setUseProxy(enabled);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('useProxy', String(enabled));
+    }
+    if (enabled) {
+      fetchJson('/api/proxy-status')
+        .then(setProxyStatus)
+        .catch(() => setProxyStatus(null));
+    } else {
+      setProxyStatus(null);
+    }
+  };
+
   const handleTurnstileVerify = (token) => {
     setTurnstileToken(token || null);
   };
@@ -61,7 +84,7 @@ const PostsPage = ({ openQrModal, onQrDataFetched, getCookieContent }) => {
       const postsJson = await fetchJson('/api/posts-info', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url.trim(), turnstileToken, cookies })
+        body: JSON.stringify({ url: url.trim(), turnstileToken, cookies, useProxy })
       });
 
       if (postsJson.success && postsJson.data?.mediaItems?.length > 0) {
@@ -246,6 +269,9 @@ const PostsPage = ({ openQrModal, onQrDataFetched, getCookieContent }) => {
         onPaste={handlePaste}
         isLoadingInfo={isLoadingInfo}
         errorMessage={errorMessage}
+        useProxy={useProxy}
+        onUseProxyChange={handleUseProxyChange}
+        proxyStatus={proxyStatus}
       />
 
       {CAPTCHA_ENABLED && (

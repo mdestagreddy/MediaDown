@@ -4,9 +4,11 @@ import {
   Sliders,
   AlertCircle,
   X,
-  Image
+  Image,
+  Globe
 } from 'lucide-react';
 import './PostsUrlInput.css';
+import './shared.css';
 import useLocale from '../hooks/useLocale';
 
 const PostsUrlInput = ({
@@ -15,7 +17,10 @@ const PostsUrlInput = ({
   onAnalyze,
   onPaste,
   isLoadingInfo,
-  errorMessage
+  errorMessage,
+  useProxy = false,
+  onUseProxyChange,
+  proxyStatus = null
 }) => {
   const { t } = useLocale();
 
@@ -74,6 +79,41 @@ const PostsUrlInput = ({
           </button>
         </div>
       </form>
+
+      {/* Proxy Toggle */}
+      <div className="proxy-toggle-section">
+        <div className="proxy-toggle-row">
+          <label className="proxy-toggle-label" htmlFor="posts-proxy-toggle">
+            <span className="proxy-toggle-text">
+              <Globe size={16} style={{ color: 'var(--accent-cyan)' }} />
+              <span className="fw-700">{t('proxy.title')}</span>
+            </span>
+            <div className="toggle-switch">
+              <input
+                id="posts-proxy-toggle"
+                type="checkbox"
+                checked={useProxy}
+                onChange={(e) => onUseProxyChange && onUseProxyChange(e.target.checked)}
+                disabled={isLoadingInfo}
+              />
+              <span className="toggle-slider" />
+            </div>
+          </label>
+        </div>
+        {useProxy && proxyStatus && (
+          <div className="proxy-status-row">
+            <span className="proxy-status-dot" />
+            <span className="t-xs c-dim">
+              {proxyStatus.availableProxies > 0
+                ? t('proxy.statusActive', { count: proxyStatus.availableProxies })
+                : t('proxy.statusFetching')}
+            </span>
+          </div>
+        )}
+        <div className="t-xs c-dim proxy-desc">
+          {t('proxy.desc')}
+        </div>
+      </div>
 
       {errorMessage && (
         <div className="error-banner fl-between gap-12 flex-wrap">

@@ -23,6 +23,15 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal, getCookieCo
   const [mediaInfo, setMediaInfo] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
 
+  const [useProxy, setUseProxy] = useState(() => {
+    if (typeof localStorage !== 'undefined') {
+      const stored = localStorage.getItem('useProxy');
+      return stored === 'true';
+    }
+    return false;
+  });
+  const [proxyStatus, setProxyStatus] = useState(null);
+
   const [mode, setMode] = useState('video');
 
   const [turnstileToken, setTurnstileToken] = useState(null);
@@ -92,6 +101,20 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal, getCookieCo
     }
   };
 
+  const handleUseProxyChange = (enabled) => {
+    setUseProxy(enabled);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('useProxy', String(enabled));
+    }
+    if (enabled) {
+      fetchJson('/api/proxy-status')
+        .then(setProxyStatus)
+        .catch(() => setProxyStatus(null));
+    } else {
+      setProxyStatus(null);
+    }
+  };
+
   const handleTurnstileVerify = useCallback((token) => {
     setTurnstileToken(token || null);
   }, []);
@@ -129,12 +152,12 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal, getCookieCo
     try {
       let infoResult = null;
       try {
-       const cookies = getCookieContent ? getCookieContent() : null;
-         const infoJson = await fetchJson('/api/info', {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ url: url.trim(), includePlaylist: true, turnstileToken, cookies })
-           });
+        const cookies = getCookieContent ? getCookieContent() : null;
+          const infoJson = await fetchJson('/api/info', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url: url.trim(), includePlaylist: true, turnstileToken, cookies, useProxy })
+            });
 
           if (infoJson.success) {
             infoResult = infoJson.data;
@@ -296,7 +319,8 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal, getCookieCo
          imageSource: mediaInfo.imageSource || null,
         totalImages: mode === 'image' ? (mediaInfo.images?.length || 0) : 0,
         cookies,
-        turnstileToken
+        turnstileToken,
+        useProxy
       };
 
       const json = await fetchJson('/api/download', {
@@ -369,9 +393,10 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal, getCookieCo
          playlistMode: selectedPlaylistItems.length > 0 ? 'selected' : 'all',
          playlistDownloadMode: audioSettings.playlistDownloadMode || 'video',
           playlistQuality: audioSettings.playlistQuality || 'best',
-         cookies,
-         turnstileToken
-       };
+          cookies,
+          turnstileToken,
+          useProxy
+        };
 
       const json = await fetchJson('/api/download', {
         method: 'POST',
@@ -536,7 +561,7 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal, getCookieCo
       <HeroSection />
 
       {/* URL Input Bar */}
-      <UrlInputCard
+       <UrlInputCard
         url={url}
         setUrl={setUrl}
         onAnalyze={handleAnalyze}
@@ -544,6 +569,9 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal, getCookieCo
         isLoadingInfo={isLoadingInfo}
         errorMessage={errorMessage}
         onOpenCookieModal={onOpenCookieModal}
+        useProxy={useProxy}
+        onUseProxyChange={handleUseProxyChange}
+        proxyStatus={proxyStatus}
       />
 
       {CAPTCHA_ENABLED && (

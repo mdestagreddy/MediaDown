@@ -56,6 +56,12 @@
     "clearTooltip": "Hapus",
     "setCookiesBtn": "Atur Cookies Anti-Bot"
   },
+  "proxy": {
+    "title": "Proxy SOCKS5",
+    "desc": "Rute unduhan melalui proxy SOCKS5 acak untuk melewati pemblokiran geo dan rate limit. Proxy yang gagal akan otomatis dicoba lagi dengan proxy lain.",
+    "statusActive": "{{count}} proxy tersedia",
+    "statusFetching": "Mengambil daftar proxy..."
+  },
   "mediaBox": {
     "formatsSelect": "Pilih Format",
     "qualitySelect": "Pilih Kualitas",

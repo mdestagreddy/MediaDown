@@ -54,7 +54,13 @@
     "heroDesc": "No more third-party downloader failures. Pick video & audio resolutions separately, convert to your preferred formats, and download to your laptop or phone with server auto-cleanup.",
     "platforms": "YouTube,TikTok (No Watermark),Instagram Reels & Stories,X / Twitter,Facebook,Threads,Reddit,SoundCloud,1000+ Other Sites",
     "clearTooltip": "Clear",
-    "setCookiesBtn": "Set Anti-Bot Cookies"
+  "setCookiesBtn": "Set Anti-Bot Cookies"
+  },
+  "proxy": {
+    "title": "SOCKS5 Proxy",
+    "desc": "Route downloads through random SOCKS5 proxies to bypass geo-blocks and rate limits. Failed proxies are automatically retried with another.",
+    "statusActive": "{{count}} proxies available",
+    "statusFetching": "Fetching proxy list..."
   },
   "mediaBox": {
     "formatsSelect": "Select Format",

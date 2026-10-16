@@ -2,6 +2,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const { withProxyRetry } = require('./proxyPool');
 
 function writeTempCookies(cookies, taskDir) {
   if (!cookies || !cookies.trim()) return null;
@@ -39,68 +40,71 @@ function getAntiBotArgs(cookies, taskDir) {
  * Extract comprehensive metadata and streams from URL using yt-dlp
  */
 async function getMediaInfo(url, options = {}) {
-  return new Promise((resolve, reject) => {
-    const { includePlaylist = false, cookies = null, taskDir = null } = options;
+  const { includePlaylist = false, cookies = null, taskDir = null, useProxy = false } = options;
 
-    const { args: antiBotArgs, tempCookiesPath } = getAntiBotArgs(cookies, taskDir);
-    const args = [
-      '--dump-single-json',
-      '--no-warnings',
-      '--ignore-errors',
-      ...antiBotArgs,
-      url
-    ];
+  return withProxyRetry(async (proxy) => {
+    return new Promise((resolve, reject) => {
+      const { args: antiBotArgs, tempCookiesPath } = getAntiBotArgs(cookies, taskDir);
+      const args = [
+        '--dump-single-json',
+        '--no-warnings',
+        '--ignore-errors',
+        ...antiBotArgs,
+        ...(proxy ? ['--proxy', proxy] : []),
+        url
+      ];
 
-    // For playlist info extraction, use --flat-playlist for YouTube (much faster)
-    // since we only need basic metadata (id, title, url, thumbnails) for the UI.
-    // Other platforms may need full metadata via --yes-playlist. Full format extraction
-    // happens later only for items actually selected for download.
-    const isYoutube = /youtube\.com|youtu\.be|youtube-nocookie\.com/.test(url);
-    if (includePlaylist) {
-      if (isYoutube) {
-        args.push('--flat-playlist');
+      // For playlist info extraction, use --flat-playlist for YouTube (much faster)
+      // since we only need basic metadata (id, title, url, thumbnails) for the UI.
+      // Other platforms may need full metadata via --yes-playlist. Full format extraction
+      // happens later only for items actually selected for download.
+      const isYoutube = /youtube\.com|youtu\.be|youtube-nocookie\.com/.test(url);
+      if (includePlaylist) {
+        if (isYoutube) {
+          args.push('--flat-playlist');
+        } else {
+          args.push('--yes-playlist');
+        }
+        args.push('--playlist-start', '1');
+        args.push('--playlist-end', '100');
       } else {
-        args.push('--yes-playlist');
-      }
-      args.push('--playlist-start', '1');
-      args.push('--playlist-end', '100');
-    } else {
-      args.push('--no-playlist');
-    }
-
-    const child = spawn('yt-dlp', args);
-    let stdoutData = '';
-    let stderrData = '';
-
-    child.stdout.on('data', (data) => {
-      stdoutData += data.toString();
-    });
-
-    child.stderr.on('data', (data) => {
-      stderrData += data.toString();
-    });
-
-    child.on('close', (code) => {
-      cleanupTempCookies(tempCookiesPath);
-
-      if (code !== 0 || !stdoutData.trim()) {
-        const errorMsg = stderrData.trim() || 'Gagal mengekstrak informasi media dari URL yang diberikan.';
-        return reject(new Error(errorMsg));
+        args.push('--no-playlist');
       }
 
-      try {
-        const info = JSON.parse(stdoutData);
-        const processed = processRawInfo(info);
-        resolve(processed);
-      } catch (err) {
-        reject(new Error(`Gagal memparsing data dari server: ${err.message}`));
-      }
-    });
+      const child = spawn('yt-dlp', args);
+      let stdoutData = '';
+      let stderrData = '';
 
-    child.on('error', (err) => {
-      reject(new Error(`yt-dlp tidak dapat dijalankan: ${err.message}`));
+      child.stdout.on('data', (data) => {
+        stdoutData += data.toString();
+      });
+
+      child.stderr.on('data', (data) => {
+        stderrData += data.toString();
+      });
+
+      child.on('close', (code) => {
+        cleanupTempCookies(tempCookiesPath);
+
+        if (code !== 0 || !stdoutData.trim()) {
+          const errorMsg = stderrData.trim() || 'Gagal mengekstrak informasi media dari URL yang diberikan.';
+          return reject(new Error(errorMsg));
+        }
+
+        try {
+          const info = JSON.parse(stdoutData);
+          const processed = processRawInfo(info);
+          resolve(processed);
+        } catch (err) {
+          reject(new Error(`Gagal memparsing data dari server: ${err.message}`));
+        }
+      });
+
+      child.on('error', (err) => {
+        reject(new Error(`yt-dlp tidak dapat dijalankan: ${err.message}`));
+      });
     });
-  });
+  }, useProxy);
 }
 
 /**
@@ -384,9 +388,9 @@ function downloadMedia({
   audioQuality = '320k',
   sampleRate = 'auto',
   bitDepth = 'auto',
-   embedMetadata = false,
-   outputTemplate,
-   imageQuality = 'best',
+  embedMetadata = false,
+  outputTemplate,
+  imageQuality = 'best',
   imageFormat = 'original',
   playlistItems: selectedItems = [],
   playlistMode = 'all', // 'all' | 'selected'
@@ -394,10 +398,12 @@ function downloadMedia({
   playlistQuality = 'best', // 'best' | 'high' | 'medium' | 'low' (for playlist mode)
   cookies = null,
   taskDir = null,
+  useProxy = false,
   onProgress,
   onLog
 }) {
-  return new Promise((resolve, reject) => {
+  return withProxyRetry(async (proxy) => {
+    return new Promise((resolve, reject) => {
     const { args: antiBotArgs, tempCookiesPath } = getAntiBotArgs(cookies, taskDir);
     const outputTemplateFinal = outputTemplate
       ? path.join(outputDir, outputTemplate)
@@ -410,6 +416,7 @@ function downloadMedia({
       '--progress-template',
       '%(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s|%(progress.downloaded_bytes)s|%(progress.total_bytes)s|%(progress.status)s',
       ...antiBotArgs,
+      ...(proxy ? ['--proxy', proxy] : []),
     ];
 
     // Playlist mode: don't use --no-playlist if downloading playlist
@@ -770,6 +777,7 @@ function downloadMedia({
       reject(new Error(`Gagal mengeksekusi yt-dlp: ${err.message}`));
     });
   });
+  }, useProxy);
 }
 
 // Helpers

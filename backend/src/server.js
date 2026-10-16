@@ -12,6 +12,7 @@ const { getMediaInfo, downloadMedia } = require('./services/ytDlpService');
 const { getImageInfo, downloadPostMedia } = require('./services/galleryDlService');
 const taskManager = require('./services/taskManager');
 const { getLocalIp } = require('./utils/network');
+const proxyPool = require('./services/proxyPool');
 
 const TOKEN_EXPIRY_MS = 15 * 60 * 1000;
 const tokenStore = new Map();
@@ -112,9 +113,28 @@ app.get('/api/network-info', (req, res) => {
   });
 });
 
+// Proxy pool status endpoint
+app.get('/api/proxy-status', async (req, res) => {
+  try {
+    await proxyPool.ensureProxies();
+    res.json({
+      success: true,
+      availableProxies: proxyPool.getAvailableProxies().length,
+      totalProxies: proxyPool.getAvailableProxies().length + 0, // blacklisted not exposed separately
+      sourceUrl: proxyPool.PROXY_SOURCE_URL
+    });
+  } catch (err) {
+    res.json({
+      success: false,
+      availableProxies: 0,
+      error: err.message
+    });
+  }
+});
+
 // Extract media information (Video & Audio streams)
 app.post('/api/info', async (req, res) => {
-  const { url, includePlaylist = false, turnstileToken, cookies = null } = req.body;
+  const { url, includePlaylist = false, turnstileToken, cookies = null, useProxy = false } = req.body;
   if (!url || typeof url !== 'string' || !url.trim()) {
     return res.status(400).json({ error: 'URL media harus disertakan.' });
   }
@@ -125,13 +145,13 @@ app.post('/api/info', async (req, res) => {
   }
 
   try {
-    const info = await getMediaInfo(url.trim(), { includePlaylist, cookies });
+    const info = await getMediaInfo(url.trim(), { includePlaylist, cookies, useProxy });
     res.json({ success: true, data: info });
   } catch (err) {
     // Check if yt-dlp indicates this is a playlist and retry with playlist mode
     if (!includePlaylist && (err.message.includes('playlist') || err.message.includes('is a private video'))) {
       try {
-        const info = await getMediaInfo(url.trim(), { includePlaylist: true, cookies });
+        const info = await getMediaInfo(url.trim(), { includePlaylist: true, cookies, useProxy });
         res.json({ success: true, data: info });
       } catch (retryErr) {
         console.error('[Info Error]', retryErr.message);
@@ -154,7 +174,7 @@ app.post('/api/info', async (req, res) => {
 
 // Get available media info for posts/stories (uses gallery-dl)
 app.post('/api/posts-info', async (req, res) => {
-  const { url, turnstileToken, cookies = null } = req.body;
+  const { url, turnstileToken, cookies = null, useProxy = false } = req.body;
   if (!url || typeof url !== 'string' || !url.trim()) {
     return res.status(400).json({ error: 'URL media harus disertakan.' });
   }
@@ -165,7 +185,7 @@ app.post('/api/posts-info', async (req, res) => {
   }
 
   try {
-    const info = await getImageInfo(url.trim(), cookies);
+    const info = await getImageInfo(url.trim(), cookies, null, useProxy);
     res.json({ success: true, data: info });
   } catch (err) {
     console.error('[Image Info Error]', err.message);
@@ -354,10 +374,11 @@ app.post('/api/download', async (req, res) => {
      playlistQuality = 'best',
       mediaEngine = 'auto',
      imageSource = null,
-      totalImages = 0,
-      cookies = null,
-     turnstileToken
-  } = req.body;
+       totalImages = 0,
+       cookies = null,
+      useProxy = false,
+      turnstileToken
+   } = req.body;
 
   if (!url || !url.trim()) {
     return res.status(400).json({ error: 'URL tidak boleh kosong.' });
@@ -388,10 +409,11 @@ app.post('/api/download', async (req, res) => {
      playlistItems,
      playlistMode,
      playlistDownloadMode,
-      playlistQuality,
-      mediaEngine,
-      imageSource
-  });
+       playlistQuality,
+       mediaEngine,
+       imageSource,
+       useProxy
+   });
 
   res.json({
     success: true,
@@ -405,7 +427,7 @@ app.post('/api/download', async (req, res) => {
    // When imageSource is 'yt-dlp', use yt-dlp for image download (fallback when gallery-dl is unavailable)
    const useGalleryDl = mediaEngine === 'gallery' || (mediaEngine === 'auto' && mode === 'image' && imageSource !== 'yt-dlp');
    const engineName = useGalleryDl ? 'gallery-dl' : 'yt-dlp';
-   taskManager.addLog(taskId, `Tugas dibuat - Mode: ${mode}, Engine: ${engineName}, Judul: ${title}`);
+    taskManager.addLog(taskId, `Tugas dibuat - Mode: ${mode}, Engine: ${engineName}, Judul: ${title}${useProxy ? ' (proxy: SOCKS5 aktif)' : ''}`);
    const useYtDlp = mediaEngine === 'ytdl' || mediaEngine === 'auto' && mode !== 'image';
 
   const progressCallback = (prog) => {
@@ -432,16 +454,17 @@ app.post('/api/download', async (req, res) => {
         outputDir: task.taskDir,
         imageFormat,
         totalImages,
-        outputTemplate,
-        cookies,
-        taskDir: task.taskDir,
-        onProgress: progressCallback,
-        onLog: (msg) => {
-          console.log(`[Task ${taskId}] ${msg}`);
-          taskManager.addLog(taskId, msg);
-        }
-      });
-    }
+         outputTemplate,
+         cookies,
+         taskDir: task.taskDir,
+         useProxy,
+         onProgress: progressCallback,
+         onLog: (msg) => {
+           console.log(`[Task ${taskId}] ${msg}`);
+           taskManager.addLog(taskId, msg);
+         }
+       });
+     }
     return downloadMedia({
       url: url.trim(),
       outputDir: task.taskDir,
@@ -462,6 +485,7 @@ app.post('/api/download', async (req, res) => {
       playlistMode: playlistMode,
       cookies,
       taskDir: task.taskDir,
+      useProxy,
       onProgress: progressCallback,
       onLog: (msg) => {
         console.log(`[Task ${taskId}] ${msg}`);
