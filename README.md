@@ -123,7 +123,13 @@ Dirancang khusus untuk melampaui website downloader pihak ketiga yang sering rus
 19. **Metadata & Cover Art Embedding**:
     - Aktifkan toggle di bawah format audio (MP3, M4A, FLAC) untuk menyematkan judul, artis, album, dan gambar cover ke dalam file audio.
     - Berlaku untuk mode Audio tunggal sekaligus untuk playlist mode (Audio Only).
-    - Menggunakan `--embed-thumbnail` + `--embed-metadata` dari yt-dlp; MP3 otomatis mengkonversi thumbnail ke JPEG.
+    - Menggunakan `--embed-thumbnail` + `--embed-metadata` dari yt-dlp; MP3 otomatis mengonversi thumbnail ke JPEG.
+
+20. **SOCKS5 Proxy Rotation (Opsional)**:
+    - Aktifkan toggle **SOCKS5 Proxy** di kartu input URL untuk mengarahkan semua unduhan dan ekstraksi metadata melalui proxy SOCKS5 acak.
+    - Daftar proxy diambil secara otomatis dari ProxyScrape (`https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&proxy_format=protocolipport&format=text`), hanya memilih proxy dengan protokol `socks5://`.
+    - Jika satu proxy gagal (timeout, connection error, dll), proxy tersebut otomatis *blacklist* dan sistem mencoba dengan proxy lain dari daftar (hingga 3 kali ulang).
+    - Status tersedia via endpoint `GET /api/proxy-status`.
 
 ---
 
@@ -161,13 +167,20 @@ Kuki (cookies) disimpan **di browser Anda** melalui IndexedDB, bukan di server. 
 - `MAX_CONCURRENT` (env, default `4`) — jumlah unduhan simultan maksimal.
 - Task berikutnya otomatis jalan ketika slot ada. Cek antrean via `GET /api/queue`.
 
+### SOCKS5 Proxy Rotation
+- **Opsional** — aktifkan via toggle slider di kartu input URL (berlaku untuk halaman utama dan halaman posts).
+- Daftar proxy SOCKS5 diambil dari ProxyScrape dan di-cache selama 5 menit.
+- Endpoint status: `GET /api/proxy-status` → `{ success, availableProxies, sourceUrl }`.
+- Saat proxy gagal, sistem otomatis mencoba proxy lain (maksimal 3 percobaan).
+- Proxy diteruskan ke yt-dlp / gallery-dl melalui argumen `--proxy socks5://<ip>:<port>`.
+
 ---
 
 ## 🛠️ Panduan Menjalankan Aplikasi
 
 ### 1. Prasyarat Sistem
 - **Node.js** (v18+)
-- **yt-dlp** & **ffmpeg** (sudah terpasang di sistem dan terdaftar dalam PATH)
+- **yt-dlp**, **ffmpeg**, & **gallery-dl** (sudah terpasang di sistem dan terdaftar dalam PATH)
 
 ### 2. Jalankan Backend (Port 5000)
 ```bash
@@ -245,6 +258,7 @@ MediaDown/
 │   │   ├── services/
 │   │   │   ├── ytDlpService.js    # Ekstraksi metadata & engine unduhan yt-dlp
 │   │   │   ├── galleryDlService.js# Engine unduhan gambar via gallery-dl
+│   │   │   ├── proxyPool.js       # Pool proxy SOCKS5 (fetch, cache, blacklist, retry)
 │   │   │   └── taskManager.js     # Manajemen task, SSE, log & auto-cleanup server
 │   │   └── utils/
 │   │       └── network.js         # Deteksi otomatis IP LAN untuk QR transfer
@@ -275,7 +289,7 @@ MediaDown/
 │   │   │   ├── Header.jsx             # Brand, status server, tema, tombol cookies (route-aware)
 │   │   │   ├── Footer.jsx             # Copyright, link navigasi, GitHub, powered-by, language toggle
 │   │   │   ├── HeroSection.jsx        # Judul hero & daftar platform
-│   │   │   ├── UrlInputCard.jsx       # Input URL, tempel, analisis & error banner
+│   │   │   ├── UrlInputCard.jsx       # Input URL, tempel, analisis, proxy toggle & error banner
 │   │   │   ├── MediaBox.jsx           # Kartu inspeksi media (tabs + selector)
 │   │   │   ├── MediaPreview.jsx       # Thumbnail & metadata media
 │   │   │   ├── ModeTabs.jsx           # Tab mode Video / Audio / Gambar / Playlist
