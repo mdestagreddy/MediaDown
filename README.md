@@ -54,6 +54,7 @@ Dirancang khusus untuk melampaui website downloader pihak ketiga yang sering rus
     - Nyaman digunakan baik di layar HP, tablet, maupun desktop PC.
     - **React Lazy Loading (Code Splitting)**: halaman `/posts`, `/terms`, `/faq`, serta modal *QR* dan *Cookie* dimuat secara dinamis (lazy) hanya saat dibutuhkan, mengurangi ukuran bundle awal sebesar ~20 KB.
     - **Tema Terang/Gelap otomatis**: mendeteksi preferensi perangkat (`prefers-color-scheme`). Toggle manual via ikon di header (Auto ↔ Terang ↔ Gelap), pilihan tersimpan di *localStorage*.
+    - **Warna Aksen Tema yang Dapat Dipersonalisasi**: pilih dari 8 preset warna (Indigo, Violet, Cyan, Emerald, Rose, Amber, Blue, Teal) atau gunakan color picker untuk warna kustom. Warna aksen diterapkan secara dinamis ke seluruh elemen UI melalui CSS custom properties. Pilihan tersimpan di *localStorage* dan dapat di-reset kembali ke default. Pada desktop, penggunaan ruang header dioptimalkan dengan menempatkan pengatur warna di dalam menu tiga titik (overflow menu) pada layar kecil.
     - **Multi-Language Support (i18n)** dilengkapi di bawah.
 
 7. **Multi-Language Support (i18n):**
@@ -130,6 +131,42 @@ Dirancang khusus untuk melampaui website downloader pihak ketiga yang sering rus
     - Daftar proxy diambil secara otomatis dari ProxyScrape (`https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&proxy_format=protocolipport&format=text`), hanya memilih proxy dengan protokol `socks5://`.
     - Jika satu proxy gagal (timeout, connection error, dll), proxy tersebut otomatis *blacklist* dan sistem mencoba dengan proxy lain dari daftar (hingga 3 kali ulang).
     - Status tersedia via endpoint `GET /api/proxy-status`.
+
+### 🎨 Sistem Warna Aksen Tema
+
+#### Gambaran Umum
+Aplikasi mendukung personalisasi warna aksen tema yang diterapkan secara dinamis ke seluruh elemen UI melalui CSS custom properties. Sistem ini mendeteksi tema (terang/gelap) yang aktif dan menyesuaikan warna aksen yang dipilih.
+
+#### Cara Kerja
+1. **Context State**: `ColorAccentContext` dan `ColorAccentProvider` mengelola state warna aksen (preset terpilih + warna kustom) dengan persistensi ke `localStorage`.
+2. **Derivasi Palette**: Warna aksen yang dipilih diproses melalui konversi HSL untuk menghasilkan palet warna sekunder dan tersier yang harmonius.
+3. **CSS Custom Properties**: Warna diset ke `document.documentElement` melalui variabel CSS (`--accent-indigo`, `--accent-indigo-rgb`, `--accent-cyan`, `--accent-cyan-rgb`, `--accent-violet`, `--accent-violet-rgb`).
+4. **React Portal**: Popover selector warna dirender ke `document.body` via `createPortal` untuk menghindari masalah stacking context, dengan posisi dihitung berdasarkan lokasi tombol.
+
+#### Preset yang Tersedia
+| Preset | Primary | Secondary | Tertiary |
+|--------|---------|-----------|----------|
+| Indigo | `#6366f1` | `#06b6d4` | `#8b5cf6` |
+| Violet | `#8b5cf6` | `#06b6d4` | `#a855f7` |
+| Cyan | `#06b6d4` | `#38bdf8` | `#6366f1` |
+| Emerald | `#10b981` | `#38bdf8` | `#34d399` |
+| Rose | `#f43f5e` | `#fb7185` | `#ec4899` |
+| Amber | `#f59e0b` | `#fbbf24` | `#f97316` |
+| Blue | `#3b82f6` | `#60a5fa` | `#8b5cf6` |
+| Teal | `#14b8a3` | `#10b981` | `#06b6d4` |
+
+#### Penggunaan di Header
+- **Desktop**: Tombol tema (warna aksen) langsung terlihat di header.
+- **Mobile/Tablet**: Tombol warna aksen ditempatkan di dalam menu tiga titik (overflow menu) di header. Tiga titik disembunyikan pada desktop untuk menghemat ruang.
+- Semua tombol header (tema toggle, cookie, server badge) memiliki tinggi yang konsisten melalui CSS specificity yang tepas pada kelas `.btn-secondary.*` gabungan.
+
+#### File Terkait
+- `src/contexts/ColorAccentContext.js` — React context untuk state warna aksen
+- `src/contexts/ColorAccentProvider.jsx` — Provider dengan 8 preset, persistensi localStorage, derivasi palet HSL
+- `src/hooks/useColorAccent.js` — Hook konsumsi color accent context
+- `src/components/ColorAccentGenerator.jsx` — Popover UI untuk seleksi warna
+- `src/components/ColorAccentGenerator.css` — Gaya popover dan swatch
+- `src/index.css` — CSS custom properties (termasuk variabel `--accent-*-rgb`)
 
 ---
 
@@ -273,11 +310,14 @@ MediaDown/
 │   │   ├── index.css              # Reset, font, & styling global
 │   │   ├── main.jsx               # Entry point (BrowserRouter + LocaleProvider)
 │   │   ├── contexts/
-│   │   │   └── LocaleContext.jsx  # React Context provider untuk i18n state
+│   │   │   ├── LocaleContext.js          # React Context untuk i18n state
+│   │   │   ├── ColorAccentContext.js    # React Context untuk theme color accent state
+│   │   │   └── ColorAccentProvider.jsx  # Provider: 8 presets, localStorage, HSL palette derivation
 │   │   ├── hooks/
 │   │   │   ├── useLocale.js       # Hook konsumsi locale context (t, setLocale, locale)
 │   │   │   ├── useTheme.js        # Hook tema (auto/light/dark) + prefers-color-scheme
-│   │   │   └── useCookies.js      # Hook manajemen cookies via IndexedDB (per-browser)
+│   │   │   ├── useCookies.js      # Hook manajemen cookies via IndexedDB (per-browser)
+│   │   │   └── useColorAccent.js  # Hook konsumsi color accent context
 │   │   ├── locales/
 │   │   │   ├── index.js           # Loader JSON + translate() helper
 │   │   │   ├── id.json            # String Indonesia
@@ -287,6 +327,7 @@ MediaDown/
 │   │   │   └── indexedDB.js       # IndexedDB wrapper untuk penyimpanan cookies per-browser
 │   │   ├── components/            # Komponen UI terpisah
 │   │   │   ├── Header.jsx             # Brand, status server, tema, tombol cookies (route-aware)
+│   │   │   ├── ColorAccentGenerator.jsx # Popover selector warna aksen (presets, color picker, hex input, reset)
 │   │   │   ├── Footer.jsx             # Copyright, link navigasi, GitHub, powered-by, language toggle
 │   │   │   ├── HeroSection.jsx        # Judul hero & daftar platform
 │   │   │   ├── UrlInputCard.jsx       # Input URL, tempel, analisis, proxy toggle & error banner
