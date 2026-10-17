@@ -9,12 +9,29 @@
     "dark": "Dark",
     "toggleTitle": "Change theme (auto/light/dark)"
   },
+  "colorAccent": {
+    "title": "Theme Color",
+    "presetsLabel": "Presets",
+    "customLabel": "Custom Color",
+    "resetBtn": "Reset",
+    "presets": {
+      "indigo": "Indigo",
+      "violet": "Violet",
+      "cyan": "Cyan",
+      "emerald": "Emerald",
+      "rose": "Rose",
+      "amber": "Amber",
+      "blue": "Blue",
+      "teal": "Teal"
+    }
+  },
   "header": {
-    "toggleThemeAria": "Change theme",
+    "toggleThemeAria": "Toggle theme",
     "cookieActive": "Cookies Active",
     "cookieBypass": "Bypass Bot / Cookies",
-    "cookieTitle": "Anti-Bot & YouTube Cookies Settings",
-    "serverReady": "Server Ready"
+    "cookieTitle": "Anti-Bot & Cookies Settings",
+    "serverReady": "Server Ready",
+    "menuTitle": "More"
   },
   "footer": {
     "privacyPolicy": "Privacy Policy",

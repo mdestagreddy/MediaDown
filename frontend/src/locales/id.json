@@ -9,12 +9,29 @@
     "dark": "Gelap",
     "toggleTitle": "Ganti tema (auto/light/dark)"
   },
+  "colorAccent": {
+    "title": "Warna Tema",
+    "presetsLabel": "Preset",
+    "customLabel": "Warna Kustom",
+    "resetBtn": "Reset",
+    "presets": {
+      "indigo": "Indigo",
+      "violet": "Violet",
+      "cyan": "Cyan",
+      "emerald": "Zamrud",
+      "rose": "Rose",
+      "amber": "Amber",
+      "blue": "Biru",
+      "teal": "Teal"
+    }
+  },
   "header": {
     "toggleThemeAria": "Ganti tema",
     "cookieActive": "Cookies Aktif",
     "cookieBypass": "Bypass Bot / Cookies",
     "cookieTitle": "Pengaturan Anti-Bot & Cookies YouTube",
-    "serverReady": "Server Siap"
+    "serverReady": "Server Siap",
+    "menuTitle": "Lainnya"
   },
   "footer": {
     "privacyPolicy": "Kebijakan Privasi",

@@ -88,7 +88,7 @@
   background: var(--server-badge-bg);
   border: 1px solid var(--server-badge-border);
   border-radius: 9999px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--accent-emerald);
 }
@@ -97,6 +97,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
+  flex-shrink: 0;
   background-color: var(--accent-emerald);
   box-shadow: 0 0 10px var(--accent-emerald);
   animation: pulseGlow 2s infinite;
@@ -108,7 +109,7 @@
   gap: 10px;
 }
 
-.theme-toggle {
+.btn-secondary.theme-toggle {
   padding: 6px 12px;
   font-size: 12px;
   display: flex;
@@ -118,7 +119,206 @@
   color: var(--text-muted);
 }
 
+.btn-secondary.btn-xs {
+  padding: 6px 14px;
+  font-size: 12px;
+}
+
 .theme-toggle:hover {
   border-color: var(--theme-toggle-border-hover);
   color: var(--accent-cyan);
+}
+
+/* Mobile menu (hidden on desktop) */
+.btn-secondary.header-menu-btn {
+  display: none;
+}
+
+.header-dropdown {
+  display: none;
+}
+
+
+
+.header-actions-desktop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ============================================================
+   Responsive — Tablet & Mobile (<= 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+  .app-header {
+    padding: 10px 14px;
+  }
+
+  .brand {
+    gap: 8px;
+  }
+
+  .brand-icon {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+  }
+
+  .brand-title {
+    font-size: 18px;
+  }
+
+  .brand-subtitle {
+    font-size: 8px;
+    letter-spacing: 0.5px;
+  }
+
+  .header-nav {
+    margin: 0 8px;
+  }
+
+  .nav-link {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  /* Mobile: collapse header actions into dropdown */
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+  }
+
+  .header-actions-desktop {
+    display: none;
+  }
+
+  .btn-secondary.header-menu-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--btn-secondary-bg);
+    color: var(--text-muted);
+    font-size: 12px;
+    gap: 4px;
+  }
+
+  .btn-secondary.header-menu-btn:hover {
+    background: var(--btn-secondary-bg-hover);
+    border-color: var(--accent-indigo);
+    color: var(--accent-indigo);
+  }
+
+  .header-dropdown {
+    position: absolute;
+    top: 120%;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 230px;
+    max-width: calc(100vw - 24px);
+    padding: 14px;
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card), 0 0 25px var(--qr-modal-shadow);
+    z-index: 100;
+    animation: popoverFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .header-dropdown .server-badge {
+    font-size: 12px;
+    padding: 5px 12px;
+  }
+
+  .header-dropdown .color-accent-desktop {
+    display: block;
+    width: 100%;
+  }
+
+  .header-dropdown .theme-toggle,
+  .header-dropdown .btn-secondary.color-accent-btn {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .header-dropdown .btn-secondary.color-accent-btn > span {
+    display: inline;
+  }
+}
+
+/* ============================================================
+   Responsive — Small phones (<= 480px)
+   ============================================================ */
+@media (max-width: 480px) {
+  .app-header {
+    padding: 8px 10px;
+  }
+
+  .brand {
+    gap: 6px;
+  }
+
+  .brand-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .brand-title {
+    font-size: 16px;
+  }
+
+  .brand-subtitle {
+    font-size: 7px;
+  }
+
+  .nav-link {
+    padding: 4px 8px;
+    font-size: 10px;
+    gap: 3px;
+  }
+
+   .btn-secondary.header-menu-btn {
+     width: 34px;
+     height: 34px;
+   }
+
+  .header-dropdown {
+    min-width: 200px;
+    padding: 12px;
+    max-width: calc(100vw - 20px);
+  }
+
+  .header-dropdown .theme-toggle span,
+  .header-dropdown .btn-secondary.color-accent-btn > span,
+  .header-dropdown .btn-secondary.btn-xs > span {
+    display: none;
+  }
+
+  .header-dropdown .color-accent-desktop {
+    width: 100%;
+  }
+
+  .header-dropdown .theme-toggle,
+  .header-dropdown .btn-secondary.color-accent-btn,
+  .header-dropdown .btn-secondary.btn-xs {
+    justify-content: center;
+    padding: 8px 10px;
+  }
+
+  .header-dropdown .server-badge {
+    font-size: 11px;
+    padding: 4px 10px;
+    gap: 5px;
+  }
 }

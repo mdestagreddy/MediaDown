@@ -1,12 +1,37 @@
+import { useState, useRef, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { Download, ShieldCheck, Sun, Moon, Monitor, Image as ImageIcon } from 'lucide-react';
+import { Download, ShieldCheck, Sun, Moon, Monitor, Image as ImageIcon, MoreHorizontal } from 'lucide-react';
 import './Header.css';
+import './shared.css';
+import ColorAccentGenerator from './ColorAccentGenerator';
 import useLocale from '../hooks/useLocale';
 
 const Header = ({ cookieInfo, onOpenCookieModal, networkInfo, theme, resolvedTheme, onToggleTheme }) => {
   const location = useLocation();
   const showCookieBtn = location.pathname === '/' || location.pathname === '/posts';
   const { t } = useLocale();
+
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuButtonRef = useRef(null);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        isMenuOpen &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target) &&
+        menuButtonRef.current &&
+        !menuButtonRef.current.contains(e.target)
+      ) {
+        setIsMenuOpen(false);
+      }
+    };
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMenuOpen]);
 
   const navLinks = [
     { path: '/', label: t('footer.home'), icon: Download },
@@ -18,6 +43,43 @@ const Header = ({ cookieInfo, onOpenCookieModal, networkInfo, theme, resolvedThe
     : resolvedTheme === 'light'
       ? <Sun size={16} />
       : <Moon size={16} />;
+
+  const headerActionItems = (
+    <>
+      <button
+        type="button"
+        className="btn-secondary theme-toggle"
+        onClick={onToggleTheme}
+        title={t('theme.toggleTitle')}
+        aria-label={t('header.toggleThemeAria')}
+      >
+        {themeIcon} <span>{theme === 'auto' ? t('theme.auto') : theme === 'light' ? t('theme.light') : t('theme.dark')}</span>
+      </button>
+      <div className="color-accent-desktop">
+        <ColorAccentGenerator />
+      </div>
+      {showCookieBtn && (
+        <button
+          type="button"
+          className={`btn-secondary btn-xs fl-row gap-6 ${cookieInfo.exists ? 'border-emerald' : ''}`}
+          onClick={onOpenCookieModal}
+          title={t('header.cookieTitle')}
+        >
+          <ShieldCheck size={14} className={cookieInfo.exists ? 'c-emerald' : 'c-cyan'} />
+          <span>{cookieInfo.exists ? t('header.cookieActive') : t('header.cookieBypass')}</span>
+        </button>
+      )}
+      <div className="server-badge">
+        <span className="server-dot"></span>
+        <span>{t('header.serverReady')}</span>
+        {networkInfo?.localIp && (
+          <span className="t-sm c-dim">
+            ({networkInfo.localIp})
+          </span>
+        )}
+      </div>
+    </>
+  );
 
   return (
   <header className="app-header">
@@ -41,35 +103,25 @@ const Header = ({ cookieInfo, onOpenCookieModal, networkInfo, theme, resolvedThe
       ))}
     </div>
     <div className="header-actions">
+      <div className="header-actions-desktop">
+        {headerActionItems}
+      </div>
       <button
+        ref={menuButtonRef}
         type="button"
-        className="btn-secondary theme-toggle"
-        onClick={onToggleTheme}
-        title={t('theme.toggleTitle')}
-        aria-label={t('header.toggleThemeAria')}
+        className="btn-secondary btn-sm theme-toggle header-menu-btn"
+        onClick={() => setIsMenuOpen(!isMenuOpen)}
+        title={t('header.menuTitle')}
+        aria-label={t('header.menuTitle')}
+        aria-expanded={isMenuOpen}
       >
-        {themeIcon} <span>{theme === 'auto' ? t('theme.auto') : theme === 'light' ? t('theme.light') : t('theme.dark')}</span>
+        <MoreHorizontal size={18} />
       </button>
-          {showCookieBtn && (
-            <button
-              type="button"
-              className={`btn-secondary btn-xs fl-row gap-6 ${cookieInfo.exists ? 'border-emerald' : ''}`}
-              onClick={onOpenCookieModal}
-              title={t('header.cookieTitle')}
-            >
-              <ShieldCheck size={14} className={cookieInfo.exists ? 'c-emerald' : 'c-cyan'} />
-              <span>{cookieInfo.exists ? t('header.cookieActive') : t('header.cookieBypass')}</span>
-            </button>
-          )}
-        <div className="server-badge">
-          <span className="server-dot"></span>
-          <span>{t('header.serverReady')}</span>
-          {networkInfo?.localIp && (
-            <span className="t-sm c-dim">
-              ({networkInfo.localIp})
-            </span>
-          )}
+      {isMenuOpen && (
+        <div ref={dropdownRef} className="header-dropdown">
+          {headerActionItems}
         </div>
+      )}
     </div>
   </header>
   );

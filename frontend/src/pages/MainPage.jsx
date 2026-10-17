@@ -106,14 +106,16 @@ const MainPage = ({ openQrModal, onQrDataFetched, onOpenCookieModal, getCookieCo
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('useProxy', String(enabled));
     }
-    if (enabled) {
+  };
+
+  // Fetch proxy status when proxy is toggled on or on initial load if already enabled
+  useEffect(() => {
+    if (useProxy) {
       fetchJson('/api/proxy-status')
         .then(setProxyStatus)
         .catch(() => setProxyStatus(null));
-    } else {
-      setProxyStatus(null);
     }
-  };
+  }, [useProxy]);
 
   const handleTurnstileVerify = useCallback((token) => {
     setTurnstileToken(token || null);

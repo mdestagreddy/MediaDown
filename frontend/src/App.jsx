@@ -6,6 +6,7 @@ import MainPage from './pages/MainPage';
 import { useTheme } from './hooks/useTheme';
 import { fetchJson } from './utils/api';
 import LocaleProvider from './contexts/LocaleProvider';
+import ColorAccentProvider from './contexts/ColorAccentProvider';
 import useCookies from './hooks/useCookies';
 
 const PostsPage = lazy(() => import('./pages/PostsPage'));
@@ -117,6 +118,7 @@ function App() {
 
   return (
     <LocaleProvider>
+      <ColorAccentProvider>
       <div className="app-container">
         <Header
           cookieInfo={cookieInfo}
@@ -178,6 +180,7 @@ function App() {
       )}
 
       <Footer />
+      </ColorAccentProvider>
       </LocaleProvider>
   );
 }
